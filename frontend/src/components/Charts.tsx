@@ -46,7 +46,7 @@ export function TimeChart({
       <svg
         viewBox="0 0 550 190"
         role="img"
-        aria-label={`Gr\u00e1fica temporal de ${metricLabels[metric]}, datos de demostraci\u00f3n`}
+        aria-label={`Gráfica temporal de ${metricLabels[metric]}, ${samples.every((s) => s.source === "real") ? "lecturas del sensor" : "datos de demostración"}`}
       >
         {[0, 0.5, 1].map((f) => (
           <g key={f}>
@@ -102,8 +102,11 @@ export function TimeChart({
         </text>
       </svg>
       <p className="caption">
-        {metric === "soil_moisture" ? "%" : "mg/kg"} - datos de prueba - los
-        huecos no se interpolan
+        {metric === "soil_moisture" ? "%" : valid[0].npk_unit} ·{" "}
+        {samples.every((s) => s.source === "real")
+          ? "Lecturas del sensor"
+          : "Datos de prueba"}{" "}
+        · Los huecos no se interpolan
       </p>
     </div>
   );

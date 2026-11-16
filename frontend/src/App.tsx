@@ -18,6 +18,7 @@ import { ThemeSelector } from "./components/ThemeSelector";
 import { Connection, ErrorNotice } from "./components/ui";
 import type { Scenario } from "./types/api";
 import type { SetupAction, SetupPlot } from "./types/setup";
+import { useRuntime } from "./Runtime";
 const tabs = [
   {
     id: "home",
@@ -63,6 +64,7 @@ export function Dashboard({
   setupBusy: boolean;
   onConfigure: () => void;
 }) {
+  const runtime = useRuntime();
   const [page, setPage] = useState(initialPage),
     [scenarioError, setScenarioError] = useState<string | null>(null),
     [switching, setSwitching] = useState(false);
@@ -112,11 +114,13 @@ export function Dashboard({
         <small>SEMI · SOFTWARE LOCAL</small>
       </aside>
       <div className="app-main">
-        <div className="demo-banner">
-          <FlaskConical size={15} />
-          <strong>MODO DEMOSTRACIÓN</strong>
-          <span>Control y suelo simulados</span>
-        </div>
+        {runtime.mode === "demonstration" && (
+          <div className="demo-banner">
+            <FlaskConical size={15} />
+            <strong>MODO DEMOSTRACIÓN</strong>
+            <span>Control y suelo simulados</span>
+          </div>
+        )}
         <div className="theme-bar">
           <ThemeSelector />
         </div>
@@ -134,30 +138,32 @@ export function Dashboard({
         <div className="connection-line">
           <Connection robot={robot.data} error={robot.error} />
         </div>
-        <details className="demo-tools">
-          <summary>
-            Escenarios de demostración <ChevronDown size={14} />
-          </summary>
-          <label>
-            Estado simulado
-            <select
-              aria-label="Escenario de demostración"
-              disabled={switching}
-              value={robot.data?.scenario || "connected"}
-              onChange={(e) => void setScenario(e.target.value as Scenario)}
-            >
-              <option value="connected">Conectado · demo</option>
-              <option value="disconnected">Desconexión simulada</option>
-              <option value="no_data">Sin datos actuales</option>
-              <option value="stale">Datos obsoletos</option>
-              <option value="error">Error de adquisición</option>
-            </select>
-          </label>
-          <p>
-            Los cambios solo afectan las fuentes de prueba. No se conectan
-            dispositivos.
-          </p>
-        </details>
+        {runtime.dev_tools && (
+          <details className="demo-tools">
+            <summary>
+              Escenarios de demostración <ChevronDown size={14} />
+            </summary>
+            <label>
+              Estado simulado
+              <select
+                aria-label="Escenario de demostración"
+                disabled={switching}
+                value={robot.data?.scenario || "connected"}
+                onChange={(e) => void setScenario(e.target.value as Scenario)}
+              >
+                <option value="connected">Conectado · demo</option>
+                <option value="disconnected">Desconexión simulada</option>
+                <option value="no_data">Sin datos actuales</option>
+                <option value="stale">Datos obsoletos</option>
+                <option value="error">Error de adquisición</option>
+              </select>
+            </label>
+            <p>
+              Los cambios solo afectan las fuentes de prueba. No se conectan
+              dispositivos.
+            </p>
+          </details>
+        )}
         <main>
           {page !== "control" && page !== "data" && (
             <ErrorNotice
@@ -197,6 +203,7 @@ export function Dashboard({
                     scanError={scan.error}
                     onExit={() => navigate("home")}
                     online={
+                      !!robot.data?.capabilities.manual_control &&
                       robot.data?.connection === "simulated_online" &&
                       !robot.error &&
                       !switching

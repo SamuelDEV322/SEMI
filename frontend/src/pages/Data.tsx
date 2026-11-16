@@ -8,6 +8,7 @@ import { TimeChart, SamplingPlot, metricLabels } from "../components/Charts";
 import type { Metric } from "../components/Charts";
 import { SectorManager } from "../components/SectorManager";
 import { PointEditor } from "../components/PointEditor";
+import { useRuntime } from "../Runtime";
 const failed =
   "No pudimos cargar tus datos. Comprueba la conexión e inténtalo de nuevo";
 export function Data({
@@ -33,6 +34,8 @@ export function Data({
   historyError: string | null;
   pointsError: string | null;
 }) {
+  const runtime = useRuntime();
+  const demo = runtime.mode === "demonstration";
   const [sector, setSector] = useState(""),
     [archived, setArchived] = useState(false),
     [selected, setSelected] = useState<number>(),
@@ -83,12 +86,16 @@ export function Data({
     return p;
   };
   const capture = async () => {
-    if (!point) return;
+    if (!point || !runtime.npk_capture) return;
     setBusy(true);
     setError("");
     try {
       await api.capture(point.name, point.id);
-      setNotice("Medición simulada guardada en este lugar.");
+      setNotice(
+        demo
+          ? "Medición simulada guardada en este lugar."
+          : "Medición guardada en este lugar.",
+      );
       onRefresh();
       history.refresh();
     } catch (e) {
@@ -269,12 +276,16 @@ export function Data({
             )}
             <button
               className="button primary wide"
-              disabled={busy}
+              disabled={busy || !runtime.npk_capture}
               onClick={() => void capture()}
             >
-              Guardar medición simulada
+              {demo ? "Guardar medición simulada" : "Tomar medición"}
             </button>
-            <p>Solo demostración. No se utiliza una sonda física.</p>
+            <p>
+              {demo
+                ? "Solo demostración. No se utiliza una sonda física."
+                : "Sensor de suelo no conectado. No se ha tomado ninguna medición."}
+            </p>
             <p role="status">{notice}</p>
             <ErrorNotice message={error} />
           </Card>
@@ -402,22 +413,24 @@ export function Data({
             ))}
         </details>
       )}
-      <details className="diagnostics">
-        <summary>Diagnóstico técnico de mediciones</summary>
-        <pre>
-          {JSON.stringify(
-            {
-              pointsError,
-              historyError,
-              pointHistoryError: history.error,
-              technical,
-              ambientSensors: "not_confirmed",
-            },
-            null,
-            2,
-          )}
-        </pre>
-      </details>
+      {runtime.dev_tools && (
+        <details className="diagnostics">
+          <summary>Diagnóstico técnico de mediciones</summary>
+          <pre>
+            {JSON.stringify(
+              {
+                pointsError,
+                historyError,
+                pointHistoryError: history.error,
+                technical,
+                ambientSensors: "not_confirmed",
+              },
+              null,
+              2,
+            )}
+          </pre>
+        </details>
+      )}
     </div>
   );
 }

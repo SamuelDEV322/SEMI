@@ -22,6 +22,9 @@ export default defineConfig({
       url: "http://127.0.0.1:8002/api/health/",
       reuseExistingServer: false,
       env: {
+        SEMI_MODE: "demonstration",
+        SEMI_DEV_TOOLS: "1",
+        SEMI_LIDAR_SOURCE: "mock",
         SEMI_DATABASE: "e2e.sqlite3",
         DJANGO_CSRF_TRUSTED_ORIGINS: "http://127.0.0.1:5174",
       },

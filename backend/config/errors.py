@@ -1,4 +1,5 @@
 from django.http import JsonResponse
+from django.conf import settings
 from rest_framework.views import exception_handler as drf_handler
 
 
@@ -14,7 +15,7 @@ def exception_handler(exc, context):
                 ),
                 "detail": response.data,
             },
-            "mode": "demonstration",
+            "mode": settings.SEMI_MODE,
         }
     return response
 
@@ -26,7 +27,7 @@ def csrf_failure(request, reason=""):
                 "code": "csrf_failed",
                 "detail": "Actualiza la sesión y vuelve a intentar.",
             },
-            "mode": "demonstration",
+            "mode": settings.SEMI_MODE,
         },
         status=403,
     )

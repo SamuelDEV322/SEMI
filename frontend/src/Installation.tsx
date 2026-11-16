@@ -9,7 +9,34 @@ import { Connection, ErrorNotice, dateTime } from "./components/ui";
 import { usePolling } from "./hooks/usePolling";
 import { Dashboard } from "./App";
 import type { SetupPlot, SetupAction } from "./types/setup";
+import { RuntimeContext, useRuntime } from "./Runtime";
 export default function Installation() {
+  const profile = usePolling(api.runtime, 10000);
+  if (!profile.data)
+    return (
+      <main className="setup-shell">
+        <h1>SEMI</h1>
+        {profile.error ? (
+          <>
+            <ErrorNotice message="No pudimos cargar tus datos. Comprueba la conexión e inténtalo de nuevo." />
+            <button className="button primary" onClick={profile.refresh}>
+              Intentar de nuevo
+            </button>
+          </>
+        ) : (
+          <p role="status">Preparando SEMI…</p>
+        )}
+      </main>
+    );
+  return (
+    <RuntimeContext value={profile.data}>
+      <InstallationFlow />
+    </RuntimeContext>
+  );
+}
+function InstallationFlow() {
+  const runtime = useRuntime();
+  const demo = runtime.mode === "demonstration";
   const [plot, setPlot] = useState<SetupPlot | null>(null),
     [loaded, setLoaded] = useState(false),
     [initialError, setInitialError] = useState(false),
@@ -82,7 +109,7 @@ export default function Installation() {
     setPaused(false);
     if (plot?.completed) void act("save", { step: 2 });
   };
-  const diagnostics = technical && (
+  const diagnostics = runtime.dev_tools && technical && (
     <details className="diagnostics">
       <summary>Diagnóstico técnico</summary>
       <pre>{technical}</pre>
@@ -196,20 +223,21 @@ export default function Installation() {
               <p>
                 Disponibilidad:{" "}
                 {plot.points.some((p) => p.latest_sample)
-                  ? "Ya hay mediciones de prueba guardadas."
+                  ? "Ya hay mediciones guardadas."
                   : "Todavía no hay mediciones guardadas."}
               </p>
               <p>
-                Los estados del vehículo y del suelo son simulados. No confirman
-                hardware conectado.
+                {demo
+                  ? "Los estados del vehículo y del suelo son simulados. No confirman hardware conectado."
+                  : "Puedes preparar tu cafetal ahora. Las mediciones estarán disponibles cuando se conecte el sensor de suelo."}
               </p>
             </section>
             <details className="guided-reading" open>
               <summary>Tomar mi primera medición (opcional)</summary>
               <p>
-                Con SEMI detenido, se colocaría la sonda siguiendo el
-                procedimiento validado del equipo. Aquí guardaremos solo datos
-                simulados.
+                {demo
+                  ? "Con SEMI detenido, se colocaría la sonda siguiendo el procedimiento validado del equipo. Aquí guardaremos solo datos simulados."
+                  : "Para medir necesitarás el vehículo detenido y el sensor de suelo conectado. Puedes omitir este paso y continuar."}
               </p>
               {point ? (
                 <>
@@ -229,6 +257,7 @@ export default function Installation() {
                   <button
                     className="button primary"
                     disabled={
+                      !runtime.npk_capture ||
                       busy ||
                       robot.loading ||
                       !!robot.error ||
@@ -237,8 +266,14 @@ export default function Installation() {
                     }
                     onClick={() => act("capture", { point: point.id })}
                   >
-                    Guardar medición simulada
+                    {demo ? "Guardar medición simulada" : "Tomar medición"}
                   </button>
+                  {!runtime.npk_capture && (
+                    <p>
+                      Sensor de suelo no conectado. No se ha tomado ninguna
+                      medición.
+                    </p>
+                  )}
                   {point.latest_sample && (
                     <div className="card" role="status">
                       <h2>Resultado guardado en {point.code}</h2>
@@ -253,8 +288,11 @@ export default function Installation() {
                         {dateTime(point.latest_sample.captured_at)}
                       </p>
                       <p>
-                        Datos simulados. No indican si el suelo es suficiente o
-                        deficiente para el café. Puedes volver a verlos en Mis
+                        {point.latest_sample.source === "real"
+                          ? "Lectura del sensor. "
+                          : "Datos simulados. "}
+                        Estos valores no indican por sí solos si el suelo
+                        necesita fertilización. Puedes volver a verlos en Mis
                         mediciones.
                       </p>
                     </div>
@@ -325,39 +363,41 @@ export default function Installation() {
             ? "Continuar configuración"
             : "Configurar mi cafetal"}
         </button>
-        <details className="session-tools">
-          <summary>Demostración y ensayos</summary>
-          <p>
-            Cada recorrido crea un cafetal vacío de prueba. No borra tus
-            mediciones.
-          </p>
-          <button
-            className="button"
-            disabled={busy}
-            onClick={async () => {
-              if (await act("demo")) {
-                setForce(true);
-                setPaused(false);
-              }
-            }}
-          >
-            Repetir bienvenida · demo aislada
-          </button>
-          {plot?.demo && (
-            <>
-              <button
-                className="button"
-                onClick={() => {
-                  localStorage.removeItem("semi-plot");
-                  location.reload();
-                }}
-              >
-                Volver a mis datos
-              </button>
-              <TrialTools />
-            </>
-          )}
-        </details>
+        {runtime.dev_tools && (
+          <details className="session-tools">
+            <summary>Demostración y ensayos</summary>
+            <p>
+              Cada recorrido crea un cafetal vacío de prueba. No borra tus
+              mediciones.
+            </p>
+            <button
+              className="button"
+              disabled={busy}
+              onClick={async () => {
+                if (await act("demo")) {
+                  setForce(true);
+                  setPaused(false);
+                }
+              }}
+            >
+              Repetir bienvenida · demo aislada
+            </button>
+            {plot?.demo && (
+              <>
+                <button
+                  className="button"
+                  onClick={() => {
+                    localStorage.removeItem("semi-plot");
+                    location.reload();
+                  }}
+                >
+                  Volver a mis datos
+                </button>
+                <TrialTools />
+              </>
+            )}
+          </details>
+        )}
         <ErrorNotice message={error} />
         {diagnostics}
       </div>

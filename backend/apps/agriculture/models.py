@@ -75,7 +75,8 @@ class Sample(models.Model):
         indexes = [models.Index(fields=["captured_at"])]
         constraints = [
             models.CheckConstraint(
-                condition=models.Q(source="mock"), name="gate1_samples_mock_only"
+                condition=models.Q(source__in=["mock", "replay", "real"]),
+                name="sample_source_known",
             )
         ]
 

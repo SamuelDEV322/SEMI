@@ -1,5 +1,4 @@
-import { useState } from "react";
-import { api } from "../services/api";
+import { useRuntime } from "../Runtime";
 import { AlertTriangle, Info, Check, Radio } from "lucide-react";
 import type { RobotStatus, Scan } from "../types/api";
 import { Card, Reading } from "../components/ui";
@@ -10,11 +9,27 @@ export function Status({
   robot: RobotStatus | null;
   scan: Scan | null;
 }) {
-  const [sourceError, setSourceError] = useState<string | null>(null);
+  const runtime = useRuntime();
+  const demo = runtime.mode === "demonstration";
   const rows = [
-    ["Locomoción", "Demostración · movimiento físico no disponible"],
-    ["Humedad del suelo", "Demostración · sensor de suelo no conectado"],
-    ["Sensor NPK", "Demostración · sensor de suelo no conectado"],
+    [
+      "Locomoción",
+      demo
+        ? "Demostración · movimiento físico no disponible"
+        : "Vehículo no conectado · control no disponible",
+    ],
+    [
+      "Humedad del suelo",
+      demo
+        ? "Demostración · sensor de suelo no conectado"
+        : "Sensor de suelo no conectado",
+    ],
+    [
+      "Sensor NPK",
+      demo
+        ? "Demostración · sensor de suelo no conectado"
+        : "Sensor de suelo no conectado",
+    ],
     [
       "RPLidar A1",
       scan?.valid
@@ -32,15 +47,19 @@ export function Status({
           value={robot?.telemetry.battery.value}
           unit="%"
           stale={robot?.telemetry.battery.freshness === "stale"}
+          note={demo ? "Demostración" : "Lectura del sensor"}
         />
         <p className="caption">
-          Carga simulada. La batería física todavía no se supervisa.
+          {demo
+            ? "Carga simulada. La batería física todavía no se supervisa."
+            : "Todavía no se recibe una medición de la batería."}
         </p>
       </Card>
       <Card title="Estado de componentes">
         <p className="caption mb-3">
-          Suelo y locomoción en demostración. La percepción indica su propia
-          fuente.
+          {demo
+            ? "Suelo y locomoción en demostración. La percepción indica su propia fuente."
+            : "La disponibilidad se muestra por componente. Un sensor de distancias activo no confirma la conexión del vehículo."}
         </p>
         <div className="status-list">
           {rows.map(([name, status]) => (
@@ -51,59 +70,45 @@ export function Status({
           ))}
         </div>
       </Card>
-      <details className="diagnostics">
-        <summary>Diagnóstico técnico</summary>
-        <Card title="Fuente del sensor de distancias">
-          <label>
-            Origen de la percepción
-            <select
-              aria-label="Origen LiDAR"
-              value={scan?.source || "mock"}
-              onChange={async (e) => {
-                setSourceError(null);
-                try {
-                  await api.lidarSource(e.target.value);
-                } catch (error) {
-                  setSourceError(
-                    error instanceof Error
-                      ? error.message
-                      : "No se pudo cambiar la fuente.",
-                  );
-                }
-              }}
-            >
-              <option value="mock">Demostración</option>
-              <option value="replay">Reproducción de prueba</option>
-              <option value="real">Sensor USB (diagnóstico)</option>
-            </select>
-          </label>
-          <p role="status">{sourceError}</p>
-          <p className="caption">
-            La fuente USB requiere habilitación local y un lector iniciado con
-            confirmación. Esta pantalla nunca abre puertos. Cambiar de fuente no
-            apaga el lector USB; ciérralo con Ctrl+C en su terminal.
-          </p>
-          <details>
-            <summary>Diagnóstico LiDAR y locomoción</summary>
-            <p>
-              Locomoción: verificar driver, corrientes, batería, reguladores,
-              pines, habilitación y parada física antes de integrar.
-            </p>
-            <pre>
-              {JSON.stringify(
-                {
-                  source: scan?.source,
-                  status: scan?.status,
-                  age_ms: scan?.age_ms,
-                  error: scan?.error,
-                },
-                null,
-                2,
-              )}
-            </pre>
-          </details>
-        </Card>
-      </details>
+      {runtime.dev_tools && (
+        <details className="diagnostics">
+          <summary>Diagnóstico técnico</summary>
+          <pre>
+            {JSON.stringify(
+              {
+                source: scan?.source,
+                status: scan?.status,
+                age_ms: scan?.age_ms,
+                error: scan?.error,
+              },
+              null,
+              2,
+            )}
+          </pre>
+        </details>
+      )}
+      <Card title="Sensor de distancias">
+        <p>
+          {scan?.source === "real"
+            ? "RPLidar A1 · lectura USB"
+            : "Lecturas de prueba"}
+        </p>
+        <p>
+          {scan?.status === "stale"
+            ? "Última lectura desactualizada"
+            : scan?.status === "error"
+              ? "No pudimos obtener las distancias"
+              : scan?.valid
+                ? "Lecturas disponibles"
+                : scan?.status === "no_data"
+                  ? "Sensor sin lecturas"
+                  : "Sensor no conectado"}
+        </p>
+        <p className="caption">
+          Muestra distancias alrededor del sensor. No identifica materiales del
+          suelo.
+        </p>
+      </Card>
       <Card title="Conexión">
         <div className="connection-info">
           <Radio size={22} />
@@ -114,7 +119,9 @@ export function Status({
                 : "Enlace no disponible"}
             </strong>
             <p className="caption">
-              Red local · control de demostración · no requiere Internet
+              {demo
+                ? "Red local · control de demostración · no requiere Internet"
+                : "Red local · no requiere Internet"}
             </p>
           </div>
         </div>
@@ -148,7 +155,7 @@ export function Status({
             Movimiento físico no disponible. La revisión técnica está pendiente.
           </span>
         </div>
-        {robot?.scenario === "disconnected" && (
+        {demo && robot?.scenario === "disconnected" && (
           <div className="notice danger">
             Pérdida del enlace simulada. No se permiten órdenes de movimiento.
           </div>
@@ -159,8 +166,9 @@ export function Status({
         <div className="notice">
           <Info size={18} />
           <span>
-            La conexión inalámbrica del sensor está pendiente de validar. USB
-            está preparado para diagnóstico con inicio manual.
+            {demo
+              ? "La conexión inalámbrica del sensor está pendiente de validar. USB está preparado para diagnóstico con inicio manual."
+              : "El lector del sensor se inicia desde el equipo de conexión. La aplicación no lo activa automáticamente."}
           </span>
         </div>
       </Card>

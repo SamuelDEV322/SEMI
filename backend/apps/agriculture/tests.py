@@ -4,13 +4,16 @@ import sys
 import uuid
 from unittest.mock import patch
 from django.core.management import call_command
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.utils import timezone
 from rest_framework.test import APIClient
 from adapters import registry
 from .models import Sample
 
 
+@override_settings(
+    SEMI_MODE="demonstration", SEMI_DEV_TOOLS=True, SEMI_LIDAR_SOURCE="mock"
+)
 class GateOneTests(TestCase):
     def setUp(self):
         registry.robot.reset()
@@ -231,10 +234,11 @@ class GateOneTests(TestCase):
             self.client.get("/api/measurements/history/?limit=100000").status_code, 400
         )
 
-    def test_real_provider_configuration_prevents_startup(self):
+    def test_invalid_operational_mock_source_prevents_startup(self):
         env = {
             **os.environ,
-            "SEMI_PROVIDER": "real",
+            "SEMI_MODE": "operational",
+            "SEMI_LIDAR_SOURCE": "mock",
             "DJANGO_SETTINGS_MODULE": "config.settings",
         }
         from pathlib import Path
@@ -251,4 +255,4 @@ class GateOneTests(TestCase):
             cwd=Path(__file__).resolve().parents[2],
         )
         self.assertNotEqual(result.returncode, 0)
-        self.assertIn("Gate 1 only supports", result.stderr)
+        self.assertIn("Operational mode requires", result.stderr)

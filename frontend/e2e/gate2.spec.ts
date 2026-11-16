@@ -21,21 +21,21 @@ test("missing stale and error measurements remain explicit", async ({
   ).toBeVisible();
   await page.getByLabel("Escenario de demostración").selectOption("connected");
 });
-test("LiDAR replay and real authorization", async ({ page }) => {
+test("LiDAR source cannot be changed from the browser", async ({ page }) => {
   await reset(page);
   await nav(page, "Estado");
   await page.getByText("Diagnóstico técnico", { exact: true }).click();
-  await page.getByLabel("Origen LiDAR").selectOption("replay");
-  await expect(page.getByLabel("Origen LiDAR")).toHaveValue("replay");
+  await expect(page.getByLabel("Origen LiDAR")).toHaveCount(0);
+  const token = (await (await page.request.get("/api/health/")).json()).data
+    .csrf_token;
+  const response = await page.request.post("/api/lidar/source/", {
+    headers: { "X-CSRFToken": token },
+    data: { source: "real" },
+  });
+  expect(response.status()).toBe(405);
+  expect((await response.json()).error.code).toBe("source_fixed");
   await nav(page, "Control");
-  await expect(page.getByText("REPRODUCCIÓN", { exact: true })).toBeVisible();
-  await nav(page, "Estado");
-  await page.getByText("Diagnóstico técnico", { exact: true }).click();
-  await page.getByLabel("Origen LiDAR").selectOption("real");
-  await expect(
-    page.getByRole("status").filter({ hasText: "diagnóstico USB" }),
-  ).toBeVisible();
-  await page.getByLabel("Origen LiDAR").selectOption("mock");
+  await expect(page.getByText("SIMULACIÓN", { exact: true })).toBeVisible();
 });
 test("theme contrast tokens and no corrupted text", async ({ page }) => {
   await reset(page);

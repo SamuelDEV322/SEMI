@@ -13,10 +13,22 @@ ALLOWED_HOSTS = os.getenv(
 CSRF_TRUSTED_ORIGINS = os.getenv(
     "DJANGO_CSRF_TRUSTED_ORIGINS", "http://localhost:5173,http://127.0.0.1:5173"
 ).split(",")
-if os.getenv("SEMI_PROVIDER", "mock") != "mock":
+# Deployment profile is selected only on server startup, never by a browser.
+SEMI_MODE = os.getenv("SEMI_MODE", "operational")
+if SEMI_MODE not in {"operational", "demonstration"}:
+    raise ImproperlyConfigured("SEMI_MODE must be operational or demonstration")
+SEMI_LIDAR_SOURCE = os.getenv(
+    "SEMI_LIDAR_SOURCE", "real" if SEMI_MODE == "operational" else "mock"
+)
+if SEMI_LIDAR_SOURCE not in {"real", "mock", "replay"}:
+    raise ImproperlyConfigured("Invalid SEMI_LIDAR_SOURCE")
+if SEMI_MODE == "operational" and SEMI_LIDAR_SOURCE != "real":
     raise ImproperlyConfigured(
-        "Gate 1 only supports SEMI_PROVIDER=mock. Physical adapters are not implemented."
+        "Operational mode requires a real LiDAR source; no mock fallback"
     )
+SEMI_DEV_TOOLS = (
+    DEBUG and SEMI_MODE == "demonstration" and os.getenv("SEMI_DEV_TOOLS", "0") == "1"
+)
 INSTALLED_APPS = [
     "django.contrib.contenttypes",
     "django.contrib.auth",

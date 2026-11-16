@@ -1,3 +1,4 @@
+import { useRuntime } from "../Runtime";
 import { useState, useRef } from "react";
 import type { SetupPlot, SetupAction } from "../types/setup";
 import { RelativeMap } from "./RelativeMap";
@@ -12,6 +13,7 @@ export function PointEditor({
   busy: boolean;
   onSaved?: (id: number) => void;
 }) {
+  const runtime = useRuntime();
   const [edit, setEdit] = useState<number>(),
     [name, setName] = useState(""),
     [zone, setZone] = useState(""),
@@ -53,7 +55,9 @@ export function PointEditor({
                 );
             if (point) {
               setNotice(
-                `${point.code} guardado. Ya puedes tomar una medición.`,
+                runtime.npk_capture
+                  ? `${point.code} guardado. Ya puedes tomar una medición.`
+                  : `${point.code} guardado. Aquí podrás consultar sus mediciones.`,
               );
               onSaved?.(point.id);
             }
@@ -156,7 +160,7 @@ export function PointEditor({
           </li>
         ))}
       </ul>
-      {plot.demo && plot.points.length === 0 && (
+      {runtime.dev_tools && plot.demo && plot.points.length === 0 && (
         <>
           <button
             type="button"

@@ -5,7 +5,7 @@ export type Speed = "low" | "medium";
 export type Source = "mock" | "replay" | "real";
 export interface Envelope<T> {
   schema_version: "1.0";
-  mode: "demonstration";
+  mode: "operational" | "demonstration";
   server_time: string;
   data: T;
 }
@@ -22,14 +22,14 @@ export interface Sample {
   moisture_unit: string;
   status: "valid" | "invalid";
   source: Source;
-  freshness: "fresh" | "stale";
+  freshness: "fresh" | "stale" | "unknown";
   calibration: string;
   position_method: "none" | "manual_schematic";
   x: number | null;
   y: number | null;
 }
 export interface ControlState {
-  action: Action;
+  action: Action | null;
   speed: Speed;
   epoch: number;
   window_id: string;
@@ -39,13 +39,15 @@ export interface ControlState {
 }
 export interface RobotStatus {
   surface_trial?: { state: string; blocked: boolean; source: "simulation" };
-  source: "mock";
-  hardware_connected: false;
-  connection: "simulated_online" | "simulated_offline";
+  source: Source;
+  hardware_connected: boolean;
+  connection: "simulated_online" | "simulated_offline" | "disconnected";
   scenario: Scenario;
-  state: "stopped_simulated" | "moving_simulated" | "fault";
+  state: "stopped_simulated" | "moving_simulated" | "fault" | "unavailable";
   control: ControlState;
   capabilities: {
+    manual_control: boolean;
+    npk_capture: boolean;
     physical_motion: false;
     camera: false;
     ambient: false;
@@ -74,7 +76,7 @@ export interface RobotStatus {
 }
 export interface Scan {
   sensor_id: string;
-  captured_at: string;
+  captured_at: string | null;
   status:
     | "simulated"
     | "unavailable"
@@ -88,7 +90,7 @@ export interface Scan {
   source: Source;
   unit: "mm";
   valid: boolean;
-  freshness: "fresh" | "stale";
+  freshness: "fresh" | "stale" | "unknown";
   max_range_mm: number;
   angle_convention: string;
   points: {
@@ -99,7 +101,7 @@ export interface Scan {
   }[];
 }
 export interface Command {
-  mode: "demonstration";
+  mode: "operational" | "demonstration";
   action: Action;
   speed: Speed;
   session_id: string;

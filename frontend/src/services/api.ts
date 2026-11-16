@@ -59,7 +59,7 @@ export async function request<T>(
     const envelope = body as Envelope<T>;
     if (
       envelope.schema_version !== "1.0" ||
-      envelope.mode !== "demonstration" ||
+      !["operational", "demonstration"].includes(envelope.mode) ||
       !("data" in envelope)
     )
       throw new ApiError(
@@ -104,6 +104,7 @@ async function post<T>(
   }
 }
 export const api = {
+  runtime: () => request<import("../Runtime").RuntimeProfile>("health/"),
   trial: () => request<import("../types/setup").SurfaceTrial>("demo/surface/"),
   setTrial: (data: object) =>
     post<import("../types/setup").SurfaceTrial>("demo/surface/", data),
@@ -120,13 +121,12 @@ export const api = {
   robot: () => request<RobotStatus>("robot/status/"),
   latest: () => request<Sample | null>("measurements/latest/"),
   history: () => request<Sample[]>("measurements/history/?limit=100"),
-  lidarSource: (source: string) => post<Scan>("lidar/source/", { source }),
   lidar: () => request<Scan>("lidar/latest/"),
   command: (command: Command) => post<CommandAck>("control/command/", command),
   scenario: (scenario: Scenario) =>
     post<RobotStatus>("demo/scenario/", { scenario }),
   capture: (point_label: string, sampling_point?: number) =>
-    post<Sample>("demo/capture/", { point_label, sampling_point }),
+    post<Sample>("measurements/capture/", { point_label, sampling_point }),
   points: () => request<SamplingPoint[]>("sampling-points/"),
   updatePoint: (
     id: number,

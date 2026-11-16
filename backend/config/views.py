@@ -1,14 +1,20 @@
 from django.db import connection
+from django.conf import settings
 from django.middleware.csrf import get_token
 from django.utils import timezone
 from django.views.decorators.csrf import csrf_protect
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import serializers
+from rest_framework.exceptions import PermissionDenied, APIException
 from adapters import registry
 from adapters.mock import MockTelemetryProvider, MockLidarProvider
 from apps.agriculture.models import Sample, SamplingPoint
-from apps.agriculture.serializers import SampleSerializer, PointSerializer
+from apps.agriculture.serializers import (
+    SampleSerializer,
+    PointSerializer,
+    visible_samples,
+)
 from django.utils.dateparse import parse_datetime
 from apps.robot.serializers import CommandSerializer
 from apps.telemetry.models import SystemEvent
@@ -18,7 +24,7 @@ from apps.agriculture.setup_views import scope, robot_for, surface_blocks, next_
 def envelope(data):
     return {
         "schema_version": "1.0",
-        "mode": "demonstration",
+        "mode": settings.SEMI_MODE,
         "server_time": timezone.now().isoformat(),
         "data": data,
     }
@@ -28,7 +34,7 @@ def unavailable(request):
     if robot_for(request).scenario == "error":
         return Response(
             {
-                "mode": "demonstration",
+                "mode": settings.SEMI_MODE,
                 "error": {
                     "code": "simulated_error",
                     "detail": "Error de adquisición simulado.",
@@ -60,6 +66,10 @@ def health(request):
                 "database": "sqlite",
                 "csrf_token": get_token(request),
                 "physical_control": False,
+                "mode": settings.SEMI_MODE,
+                "dev_tools": settings.SEMI_DEV_TOOLS,
+                "lidar_source": settings.SEMI_LIDAR_SOURCE,
+                "npk_capture": registry.current_npk() is not None,
             }
         )
     )
@@ -68,11 +78,19 @@ def health(request):
 @api_view(["GET"])
 def robot_status(request):
     data = robot_for(request).status()
-    data["telemetry"] = MockTelemetryProvider(robot_for(request)).latest()
-    data["events"] = list(
-        SystemEvent.objects.values("id", "created_at", "kind", "message", "source")[:8]
+    data["telemetry"] = (
+        MockTelemetryProvider(robot_for(request)).latest()
+        if registry.is_demonstration()
+        else registry.unconfigured_robot.telemetry()
     )
-    if scope(request) and scope(request).demo:
+    data["events"] = list(
+        (
+            SystemEvent.objects.all()
+            if registry.is_demonstration()
+            else SystemEvent.objects.filter(source="real")
+        ).values("id", "created_at", "kind", "message", "source")[:8]
+    )
+    if registry.is_demonstration() and scope(request) and scope(request).demo:
         from apps.agriculture.setup_views import trial_payload
 
         data["events"] = []
@@ -90,11 +108,14 @@ def latest(request):
         return failure
     row = (
         (
-            Sample.objects.filter(sampling_point__plot=scope(request)).first()
+            visible_samples(
+                Sample.objects.filter(sampling_point__plot=scope(request))
+            ).first()
             if scope(request)
-            else Sample.objects.first()
+            else visible_samples(Sample.objects.all()).first()
         )
-        if robot_for(request).scenario not in {"no_data", "disconnected"}
+        if not registry.is_demonstration()
+        or robot_for(request).scenario not in {"no_data", "disconnected"}
         else None
     )
     data = SampleSerializer(row).data if row else None
@@ -125,10 +146,14 @@ def samples(request):
                 ).data
             )
         )
+    if not registry.is_demonstration():
+        raise PermissionDenied(
+            "Las mediciones físicas solo pueden registrarse desde un adaptador de adquisición validado."
+        )
     if request.data.get("source", "mock") != "mock":
         return Response(
             {
-                "mode": "demonstration",
+                "mode": settings.SEMI_MODE,
                 "error": {
                     "code": "real_sample_forbidden",
                     "detail": "Gate 1 solo registra muestras de demostración.",
@@ -153,33 +178,37 @@ def samples(request):
 
 @api_view(["GET"])
 def lidar(request):
+    if not registry.is_demonstration():
+        return Response(envelope(registry.real_lidar.latest()))
     failure = unavailable(request)
     if failure is not None:
         return failure
-    if registry.lidar_sources.source == "mock":
+    if settings.SEMI_LIDAR_SOURCE == "mock":
         data = MockLidarProvider(robot_for(request)).latest()
         data.update(
             age_ms=30000 if robot_for(request).scenario == "stale" else 0, error=None
         )
         return Response(envelope(data))
-    return Response(envelope(registry.lidar_sources.latest()))
+    provider = (
+        registry.real_lidar
+        if settings.SEMI_LIDAR_SOURCE == "real"
+        else registry.replay_lidar
+    )
+    return Response(envelope(provider.latest()))
 
 
 @api_view(["POST"])
 def lidar_source(request):
-    try:
-        registry.lidar_sources.select(request.data.get("source"))
-    except PermissionError as error:
-        return Response(
-            {
-                "mode": "demonstration",
-                "error": {"code": "diagnostic_disabled", "detail": str(error)},
+    return Response(
+        {
+            "mode": settings.SEMI_MODE,
+            "error": {
+                "code": "source_fixed",
+                "detail": "La fuente se configura al iniciar el servidor.",
             },
-            status=403,
-        )
-    except ValueError:
-        raise serializers.ValidationError({"source": "Usa mock, replay o real."})
-    return Response(envelope(registry.lidar_sources.latest()))
+        },
+        status=405,
+    )
 
 
 @csrf_protect
@@ -188,10 +217,17 @@ def command(request):
     serializer = CommandSerializer(data=request.data)
     serializer.is_valid(raise_exception=True)
     robot = robot_for(request)
+    if not registry.is_demonstration():
+        if serializer.validated_data["mode"] != "operational":
+            raise PermissionDenied(
+                "El simulador no está disponible en el perfil operativo."
+            )
+        data, status_code = robot.command(serializer.validated_data)
+        return Response({"mode": settings.SEMI_MODE, "error": data}, status=status_code)
     if serializer.validated_data["mode"] != "demonstration":
         return Response(
             {
-                "mode": "demonstration",
+                "mode": settings.SEMI_MODE,
                 "error": {
                     "code": "physical_control_forbidden",
                     "detail": "El movimiento físico no está habilitado.",
@@ -209,7 +245,7 @@ def command(request):
         ):
             return Response(
                 {
-                    "mode": "demonstration",
+                    "mode": settings.SEMI_MODE,
                     "error": {
                         "code": "surface_demo_stop",
                         "detail": "Movimiento simulado detenido por el ensayo de superficie.",
@@ -220,7 +256,7 @@ def command(request):
         previous = robot.action
         data, status = robot.command(serializer.validated_data)
     if status != 200:
-        return Response({"mode": "demonstration", "error": data}, status=status)
+        return Response({"mode": settings.SEMI_MODE, "error": data}, status=status)
     if previous != robot.action and not (plot and plot.demo):
         SystemEvent.objects.create(
             kind="control", message=f"Control simulado: {robot.action}"
@@ -231,6 +267,8 @@ def command(request):
 @csrf_protect
 @api_view(["POST"])
 def scenario(request):
+    if not settings.SEMI_DEV_TOOLS:
+        raise PermissionDenied("Las herramientas de ensayo no están disponibles.")
     value = request.data.get("scenario")
     if value not in registry.robot.scenarios:
         raise serializers.ValidationError(
@@ -246,13 +284,21 @@ def scenario(request):
 @csrf_protect
 @api_view(["POST"])
 def capture(request):
+    if request.path.startswith("/api/demo/") and not settings.SEMI_DEV_TOOLS:
+        raise PermissionDenied("Las herramientas de ensayo no están disponibles.")
+    if registry.current_npk() is None:
+        error = APIException(
+            "Sensor de suelo no conectado. No se generó ninguna medición."
+        )
+        error.status_code = 503
+        raise error
     if (
         robot_for(request).scenario != "connected"
         or robot_for(request).status()["control"]["action"] != "stop"
     ):
         return Response(
             {
-                "mode": "demonstration",
+                "mode": settings.SEMI_MODE,
                 "error": {
                     "code": "capture_unavailable",
                     "detail": "Restablece el escenario conectado para generar una muestra.",
@@ -281,7 +327,7 @@ def capture(request):
         raise serializers.ValidationError(
             {"point_label": "Usa una etiqueta de 1 a 60 caracteres."}
         )
-    row = Sample.objects.create(**registry.npk.capture(label.strip()))
+    row = Sample.objects.create(**registry.current_npk().capture(label.strip()))
     if point:
         row.sampling_point = point
         row.save(update_fields=["sampling_point"])
@@ -305,7 +351,7 @@ def attach_legacy_point(row):
 
 
 def filtered_samples(request):
-    rows = Sample.objects.all()
+    rows = visible_samples(Sample.objects.all())
     plot = scope(request)
     if plot:
         rows = rows.filter(sampling_point__plot=plot)

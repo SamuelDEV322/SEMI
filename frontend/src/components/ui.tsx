@@ -34,7 +34,9 @@ export function Connection({
           ? "Conectando…"
           : online
             ? "Conectado · simulado"
-            : "Desconectado · simulado"}
+            : robot.source === "real"
+              ? "Vehículo no conectado"
+              : "Desconectado · simulado"}
     </span>
   );
 }
@@ -87,7 +89,7 @@ export function Reading({
         {value == null
           ? "No disponible"
           : stale
-            ? "Dato obsoleto · demo"
+            ? `Dato obsoleto${note === "Demostración" ? " · demo" : ""}`
             : note}
       </span>
     </div>

@@ -5,11 +5,16 @@ from django.conf import settings
 from django.db import transaction
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
-from rest_framework.exceptions import ValidationError, NotFound, PermissionDenied
+from rest_framework.exceptions import (
+    ValidationError,
+    NotFound,
+    PermissionDenied,
+    APIException,
+)
 from adapters.mock import MockRobotProvider
 from adapters import registry
 from .models import Plot, TerrainZone, SamplingPoint, Sample, SurfaceTrial
-from .serializers import SampleSerializer
+from .serializers import SampleSerializer, visible_samples
 
 robots = {}
 
@@ -19,7 +24,12 @@ def scope(request):
     if not value:
         return Plot.objects.filter(demo=False).first()
     try:
-        return Plot.objects.get(pk=int(value))
+        p = Plot.objects.get(pk=int(value))
+        return (
+            Plot.objects.filter(demo=False).first()
+            if p.demo and not registry.is_demonstration()
+            else p
+        )
     except (ValueError, Plot.DoesNotExist):
         raise NotFound("No se encontró este terreno.")
 
@@ -39,6 +49,8 @@ def surface_blocks(plot):
 
 
 def robot_for(request):
+    if not registry.is_demonstration():
+        return registry.unconfigured_robot
     p = scope(request)
     if p and p.demo:
         if p.id not in robots:
@@ -102,8 +114,8 @@ def payload(p):
                 "y": x.y,
                 "zone": x.zone_id,
                 "latest_sample": (
-                    SampleSerializer(x.samples.first()).data
-                    if x.samples.exists()
+                    SampleSerializer(visible_samples(x.samples).first()).data
+                    if visible_samples(x.samples).exists()
                     else None
                 ),
             }
@@ -114,7 +126,7 @@ def payload(p):
 
 def result(p):
     return Response(
-        {"schema_version": "1.0", "mode": "demonstration", "data": payload(p)}
+        {"schema_version": "1.0", "mode": settings.SEMI_MODE, "data": payload(p)}
     )
 
 
@@ -129,7 +141,7 @@ def trial_payload(p):
 
 
 def update_trial(request, p, data):
-    if not p or not p.demo or not settings.DEBUG:
+    if not p or not p.demo or not settings.SEMI_DEV_TOOLS or not settings.DEBUG:
         raise PermissionDenied(
             "El ensayo solo está disponible en un recorrido de demostración."
         )
@@ -153,12 +165,12 @@ def update_trial(request, p, data):
 @transaction.atomic
 def surface_trial(request):
     p = scope(request)
-    if not p or not p.demo or not settings.DEBUG:
+    if not p or not p.demo or not settings.SEMI_DEV_TOOLS or not settings.DEBUG:
         raise PermissionDenied("Abre primero un recorrido de demostración.")
     if request.method == "POST":
         update_trial(request, p, request.data)
     return Response(
-        {"schema_version": "1.0", "mode": "demonstration", "data": trial_payload(p)}
+        {"schema_version": "1.0", "mode": settings.SEMI_MODE, "data": trial_payload(p)}
     )
 
 
@@ -170,7 +182,7 @@ def setup(request):
         return result(p)
     action = request.data.get("action")
     if action in ["start", "demo"]:
-        if action == "demo" and not settings.DEBUG:
+        if action == "demo" and (not settings.SEMI_DEV_TOOLS or not settings.DEBUG):
             raise PermissionDenied(
                 "Recorrido de demostración disponible solo en desarrollo."
             )
@@ -216,7 +228,7 @@ def setup(request):
             ):
                 return Response(
                     {
-                        "mode": "demonstration",
+                        "mode": settings.SEMI_MODE,
                         "error": {
                             "code": "sector_in_use",
                             "detail": "Este sector tiene lugares o referencias históricas. Puedes archivarlo sin perder mediciones.",
@@ -285,6 +297,12 @@ def setup(request):
         if zone:
             point.zone_history.add(zone)
     elif action == "capture":
+        if registry.current_npk() is None:
+            error = APIException(
+                "Sensor de suelo no conectado. No se generó ninguna medición."
+            )
+            error.status_code = 503
+            raise error
         pt = own(p.points, request.data.get("point"), "un lugar")
         robot = robot_for(request)
         if robot.status()["control"]["action"] != "stop":
@@ -293,7 +311,9 @@ def setup(request):
             raise ValidationError(
                 "No pudimos obtener una medición. Comprueba la conexión e inténtalo de nuevo."
             )
-        Sample.objects.create(sampling_point=pt, **registry.npk.capture(pt.name))
+        Sample.objects.create(
+            sampling_point=pt, **registry.current_npk().capture(pt.name)
+        )
     elif action == "complete":
         p.completed = True
         p.step = 4

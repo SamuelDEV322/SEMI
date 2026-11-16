@@ -1,13 +1,18 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { api } from "../services/api";
+import { useRuntime } from "../Runtime";
 import { createSessionId } from "../services/session";
 import type { Action, ControlState, RobotStatus, Speed } from "../types/api";
 
 export function useManualControl(robot: RobotStatus | null, online: boolean) {
+  const runtime = useRuntime();
+  const demo = runtime.mode === "demonstration";
   const [action, setAction] = useState<Action>("stop"),
     [speed, setSpeed] = useState<Speed>("low"),
     [message, setMessage] = useState(
-      "Control de demostración. Mantén un botón para mover.",
+      demo
+        ? "Control de demostración. Mantén un botón para mover."
+        : "Movimiento no disponible. El vehículo no está conectado.",
     ),
     [pendingStop, setPendingStop] = useState(false),
     [technicalError, setTechnicalError] = useState<string | null>(null);
@@ -31,6 +36,12 @@ export function useManualControl(robot: RobotStatus | null, online: boolean) {
     setAction("stop");
     if (timer.current) clearInterval(timer.current);
     timer.current = null;
+    if (!demo) {
+      setMessage(
+        "No se ha enviado una orden. El control físico no está habilitado.",
+      );
+      return;
+    }
     setPendingStop(true);
     const c = control.current;
     try {
@@ -54,10 +65,11 @@ export function useManualControl(robot: RobotStatus | null, online: boolean) {
     } finally {
       setPendingStop(false);
     }
-  }, []);
+  }, [demo]);
   const start = useCallback(
     (next: Action) => {
-      if (held.current || pendingStop || !online || !control.current) return;
+      if (!demo || held.current || pendingStop || !online || !control.current)
+        return;
       held.current = true;
       active.current = next;
       setAction(next);
@@ -94,7 +106,7 @@ export function useManualControl(robot: RobotStatus | null, online: boolean) {
       void send();
       timer.current = setInterval(() => void send(), 150);
     },
-    [online, pendingStop, stop],
+    [demo, online, pendingStop, stop],
   );
   useEffect(() => {
     if ((!online || robot?.surface_trial?.blocked) && held.current) void stop();

@@ -82,6 +82,8 @@ class MockRobotProvider:
                     "owner": self.owner,
                 },
                 "capabilities": {
+                    "manual_control": True,
+                    "npk_capture": True,
                     "physical_motion": False,
                     "camera": False,
                     "ambient": False,

@@ -12,7 +12,7 @@ class ScanPoint(TypedDict):
 
 class Scan(TypedDict):
     sensor_id: str
-    captured_at: str
+    captured_at: str | None
     status: str
     source: Source
     unit: Literal["mm"]
@@ -37,6 +37,6 @@ class LidarProvider(Protocol):
     def latest(self) -> Scan: ...
 
 
-# Future Esp32RobotProvider, RealNPKProvider, SerialLidarProvider and
-# WirelessLidarProvider must satisfy these protocols. No physical implementation
-# or serial dependency is present in Gate 1.
+# SerialLidarProvider is an explicit-start USB diagnostic implementation.
+# Future Esp32RobotProvider, RealNPKProvider and WirelessLidarProvider must
+# preserve provenance and implement these contracts without synthetic fallback.

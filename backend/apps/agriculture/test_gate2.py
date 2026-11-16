@@ -1,4 +1,4 @@
-from django.test import TestCase, TransactionTestCase
+from django.test import TestCase, TransactionTestCase, override_settings
 from django.db import connection
 from django.db.migrations.executor import MigrationExecutor
 from django.utils import timezone
@@ -7,6 +7,9 @@ from adapters import registry
 from .models import Sample, SamplingPoint
 
 
+@override_settings(
+    SEMI_MODE="demonstration", SEMI_DEV_TOOLS=True, SEMI_LIDAR_SOURCE="mock"
+)
 class PointTests(TestCase):
     def setUp(self):
         registry.robot.reset()
@@ -93,6 +96,9 @@ class PointTests(TestCase):
         self.assertEqual(response.json()["data"]["latest_sample"]["nitrogen"], 20)
 
 
+@override_settings(
+    SEMI_MODE="demonstration", SEMI_DEV_TOOLS=True, SEMI_LIDAR_SOURCE="mock"
+)
 class MigrationPreservationTests(TransactionTestCase):
     def test_non_destructive_association_and_conflicts(self):
         executor = MigrationExecutor(connection)

@@ -23,13 +23,15 @@ export function LidarRadar({ scan }: { scan: Scan | null }) {
           <Radar size={15} /> Distancias alrededor de SEMI
         </span>
         <small>
-          {scan?.freshness === "stale"
-            ? "Lectura desactualizada"
-            : scan?.source === "real"
-              ? "SENSOR USB · REAL"
-              : scan?.source === "replay"
-                ? "REPRODUCCIÓN"
-                : "SIMULACIÓN"}
+          {!scan
+            ? "SIN LECTURAS"
+            : scan?.freshness === "stale"
+              ? "Lectura desactualizada"
+              : scan?.source === "real"
+                ? "SENSOR USB · REAL"
+                : scan?.source === "replay"
+                  ? "REPRODUCCIÓN"
+                  : "SIMULACIÓN"}
         </small>
       </div>
       {valid ? (
@@ -120,7 +122,11 @@ export function LidarRadar({ scan }: { scan: Scan | null }) {
       )}
       <div className="radar-footer">
         {valid ? `${scan.points.length} distancias` : "Fuente no disponible"} ·{" "}
-        {scan?.source === "real" ? "Solo lectura USB" : "Datos de prueba"}
+        {!scan
+          ? "Sin datos"
+          : scan.source === "real"
+            ? "Solo lectura USB"
+            : "Datos de prueba"}
       </div>
     </div>
   );

@@ -11,6 +11,7 @@ import type { Action, RobotStatus, Scan } from "../types/api";
 import { useManualControl } from "../hooks/useManualControl";
 import { LidarRadar } from "../components/LidarRadar";
 import { ThemeSelector } from "../components/ThemeSelector";
+import { useRuntime } from "../Runtime";
 export function Control({
   robot,
   scan,
@@ -24,6 +25,8 @@ export function Control({
   onExit: () => void;
   scanError: string | null;
 }) {
+  const runtime = useRuntime();
+  const demo = runtime.mode === "demonstration";
   const c = useManualControl(robot, online),
     pointer = useRef<number | null>(null);
   const directions: { action: Action; label: string; icon: typeof ArrowUp }[] =
@@ -34,16 +37,18 @@ export function Control({
       { action: "backward", label: "Atrás", icon: ArrowDown },
     ];
   const leave = async () => {
-    await c.stop();
+    if (online) await c.stop();
     onExit();
   };
-  const confirmed = robot?.surface_trial?.blocked
-    ? "Ensayo: STOP simulado"
-    : robot?.control.action === "stop"
-      ? "Detenido en simulación"
-      : robot
-        ? "Movimiento en simulación"
-        : "Sin confirmación";
+  const confirmed = !demo
+    ? "Estado del vehículo sin confirmar"
+    : robot?.surface_trial?.blocked
+      ? "Ensayo: STOP simulado"
+      : robot?.control.action === "stop"
+        ? "Detenido en simulación"
+        : robot
+          ? "Movimiento en simulación"
+          : "Sin confirmación";
   return (
     <section className="drive-screen" aria-label="Control de SEMI">
       <header className="drive-top">
@@ -63,15 +68,14 @@ export function Control({
       </header>
       <div className="drive-status" role="status">
         {c.pendingStop ? "Parada solicitada…" : confirmed}
-        <span>SOLO DEMOSTRACIÓN</span>
+        <span>{demo ? "SOLO DEMOSTRACIÓN" : "CONTROL NO DISPONIBLE"}</span>
       </div>
       <div className="drive-content">
         <div className="drive-perception">
           <LidarRadar scan={scanError ? null : scan} />
           {scanError && (
             <p className="caption" role="alert">
-              No se pudo obtener el escaneo. El control simulado sigue
-              disponible.
+              No se pudo obtener el escaneo. Comprueba la conexión del sensor.
             </p>
           )}
         </div>
@@ -133,12 +137,14 @@ export function Control({
             <span>Velocidad</span>
             <div className="segmented">
               <button
+                disabled={!online}
                 aria-pressed={c.speed === "low"}
                 onClick={() => c.setSpeed("low")}
               >
                 Baja
               </button>
               <button
+                disabled={!online}
                 aria-pressed={c.speed === "medium"}
                 onClick={() => c.setSpeed("medium")}
               >
@@ -148,6 +154,7 @@ export function Control({
           </div>
           <button
             className="button stop-button wide"
+            disabled={!online}
             onClick={() => void c.stop()}
           >
             <Square size={18} fill="currentColor" />
@@ -159,23 +166,27 @@ export function Control({
         </div>
       </div>
       <footer className="drive-footer">
-        Sin movimiento físico · Parada web, no emergencia física.
-        <details className="drive-diagnostics">
-          <summary>Diagnóstico</summary>
-          <pre>
-            {JSON.stringify(
-              {
-                command: c.action,
-                confirmed: robot?.control.action,
-                scanError,
-                error: c.technicalError,
-                hardwareActed: false,
-              },
-              null,
-              2,
-            )}
-          </pre>
-        </details>
+        {demo
+          ? "Sin movimiento físico · Parada web, no emergencia física."
+          : "El control físico todavía no está habilitado."}
+        {runtime.dev_tools && (
+          <details className="drive-diagnostics">
+            <summary>Diagnóstico</summary>
+            <pre>
+              {JSON.stringify(
+                {
+                  command: c.action,
+                  confirmed: robot?.control.action,
+                  scanError,
+                  error: c.technicalError,
+                  hardwareActed: false,
+                },
+                null,
+                2,
+              )}
+            </pre>
+          </details>
+        )}
       </footer>
     </section>
   );

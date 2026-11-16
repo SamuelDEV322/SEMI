@@ -2,6 +2,15 @@ import math
 from django.utils import timezone
 from rest_framework import serializers
 from .models import Sample, SamplingPoint
+from django.conf import settings
+
+
+def visible_samples(rows):
+    return (
+        rows.filter(source="real")
+        if settings.SEMI_MODE == "operational"
+        else rows.exclude(source="real")
+    )
 
 
 class SampleSerializer(serializers.ModelSerializer):
@@ -40,7 +49,11 @@ class SampleSerializer(serializers.ModelSerializer):
         )
 
     def get_calibration(self, obj):
-        return "demonstration_not_agronomically_validated"
+        return (
+            "not_validated"
+            if obj.source == "real"
+            else "demonstration_not_agronomically_validated"
+        )
 
     def validate(self, attrs):
         unknown = set(self.initial_data) - set(self.fields)
@@ -154,7 +167,7 @@ class PointSerializer(serializers.ModelSerializer):
         ]
 
     def get_latest_sample(self, obj):
-        sample = obj.samples.first()
+        sample = visible_samples(obj.samples).first()
         return SampleSerializer(sample).data if sample else None
 
     def validate(self, attrs):

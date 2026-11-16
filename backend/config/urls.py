@@ -11,6 +11,7 @@ urlpatterns = [
     path("api/health/", views.health),
     path("api/robot/status/", views.robot_status),
     path("api/measurements/latest/", views.latest),
+    path("api/measurements/capture/", views.capture),
     path("api/measurements/history/", views.history),
     path("api/npk/samples/", views.samples),
     path("api/lidar/latest/", views.lidar),

@@ -6,6 +6,9 @@ import uuid
 
 
 @override_settings(DEBUG=True)
+@override_settings(
+    SEMI_MODE="demonstration", SEMI_DEV_TOOLS=True, SEMI_LIDAR_SOURCE="mock"
+)
 class SetupTests(TestCase):
     def setUp(self):
         robots.clear()

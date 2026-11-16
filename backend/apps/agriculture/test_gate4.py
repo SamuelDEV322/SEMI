@@ -5,6 +5,9 @@ from .models import Plot, SamplingPoint, Sample, TerrainZone, SurfaceTrial
 
 
 @override_settings(DEBUG=True)
+@override_settings(
+    SEMI_MODE="demonstration", SEMI_DEV_TOOLS=True, SEMI_LIDAR_SOURCE="mock"
+)
 class SectorTests(TestCase):
     setUp = SetupTests.setUp
     post = SetupTests.post
