@@ -1,0 +1,11 @@
+# Consistent text in Git across Windows/Linux; no binary assets are filtered out.
+* text=auto
+*.py text eol=lf
+*.ts text eol=lf
+*.tsx text eol=lf
+*.css text eol=lf
+*.json text eol=lf
+*.md text eol=lf
+*.txt text eol=lf
+.gitignore text eol=lf
+.env.example text eol=lf

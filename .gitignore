@@ -1,0 +1,91 @@
+# Python environments, bytecode and tool caches
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.tox/
+.nox/
+*.egg-info/
+.coverage
+.coverage.*
+htmlcov/
+
+# Local configuration. Keep the public template under version control.
+.env
+.env.local
+.env.*
+.env.*.local
+!.env.example
+
+# Local SQLite data, journals and database backups (never delete local files)
+*.sqlite3
+*.sqlite
+*.db
+*.sqlite3-wal
+*.sqlite3-shm
+*.sqlite3-journal
+*.sqlite-wal
+*.sqlite-shm
+*.sqlite-journal
+*.db-wal
+*.db-shm
+*.db-journal
+*.sqlite3.bak
+*.sqlite3.backup
+*.sqlite.bak
+*.sqlite.backup
+*.db.bak
+*.db.backup
+/backups/
+/backup/
+
+# Frontend and firmware build/install artifacts
+node_modules/
+dist/
+build/
+.vite/
+.vite-temp/
+*.tsbuildinfo
+.eslintcache
+coverage/
+
+# Isolated dependency verification, not a second application/workspace
+/.dependency-check/
+
+# Generated tests, scans, diagnostic logs and delivery artifacts
+playwright-report/
+playwright-report-gate*/
+test-results/
+/backend/runtime/
+/docs/evidence/
+/docs/evidence-gate*/
+/docs/gate[0-9]*-*.txt
+/docs/gate[0-9]*-*.json
+/docs/repository-checks/
+/outputs/
+/work/
+/SEMI-Gate*.zip
+/SEMI-checkpoint*/
+*.log
+
+# Temporary files and local editor state
+*.tmp
+*.temp
+*.swp
+*.swo
+*~
+.vscode/*
+!.vscode/extensions.json
+!.vscode/tasks.json
+.idea/
+*.code-workspace
+
+# Operating system metadata
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+.DS_Store

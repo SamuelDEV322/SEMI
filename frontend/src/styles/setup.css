@@ -1,0 +1,277 @@
+/* Gate 4: neutral references, optional sectors and readable setup. */
+.setup-shell {
+  max-width: 680px;
+  margin: auto;
+  padding: 24px 20px calc(40px + env(safe-area-inset-bottom));
+  background: var(--bg);
+  min-height: 100dvh;
+  font-size: 17px;
+  line-height: 1.65;
+}
+.setup-shell h1 {
+  font-size: 28px;
+  line-height: 1.25;
+  margin: 24px 0 18px;
+}
+.setup-shell p {
+  margin: 16px 0;
+}
+.setup-shell button {
+  min-height: 48px;
+  font-size: 16px;
+  margin: 6px 4px 6px 0;
+}
+.setup-shell progress {
+  width: 100%;
+  accent-color: var(--accent);
+}
+.setup-shell label {
+  display: block;
+  font-size: 17px;
+}
+.setup-shell .text-button,
+.data-hub .text-button {
+  color: var(--accent);
+}
+.setup-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.setup-brand > .theme-selector {
+  margin-left: auto;
+}
+.robot-symbol {
+  display: flex;
+  justify-content: center;
+  color: var(--accent);
+  margin: 26px 0;
+}
+.setup-actions,
+.action-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.setup-shell details,
+.data-hub details {
+  margin: 16px 0;
+}
+.setup-shell summary,
+.data-hub summary {
+  min-height: 48px;
+  display: list-item;
+  padding: 10px 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--ink);
+}
+.sector-list {
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 14px;
+  margin: 18px 0;
+}
+.sector-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  border: 1px solid var(--border);
+  padding: 14px;
+  border-radius: 10px;
+  background: var(--surface);
+  overflow-wrap: anywhere;
+}
+.sector-card > span {
+  font-size: 15px;
+  color: var(--muted);
+}
+.sector-card button {
+  align-self: flex-start;
+  max-width: 100%;
+  white-space: normal;
+}
+.sector-manager form,
+.point-editor form {
+  display: grid;
+  gap: 14px;
+}
+.check-row {
+  display: flex !important;
+  align-items: center;
+  gap: 12px;
+}
+.check-row input {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  accent-color: var(--accent);
+}
+.relative-map {
+  padding: 20px;
+  background: var(--highlight);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  margin: 18px 0;
+}
+.relative-plane {
+  position: relative;
+  height: 220px;
+}
+.relative-plane[role="button"] {
+  cursor: crosshair;
+  touch-action: manipulation;
+}
+.relative-plane:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 8px;
+}
+.relative-marker {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  min-width: 32px;
+  min-height: 32px;
+  background: var(--ink);
+  color: var(--surface);
+  display: grid;
+  place-items: center;
+  font-size: 15px;
+  font-weight: 700;
+  padding: 4px;
+  pointer-events: none;
+}
+.relative-marker.draft {
+  background: var(--accent);
+  color: var(--bg);
+  border: 2px solid var(--surface);
+}
+.confirm-dialog {
+  max-width: min(540px, calc(100vw - 32px));
+  background: var(--surface);
+  color: var(--ink);
+  border: 2px solid var(--border);
+  border-radius: 12px;
+  padding: 24px;
+  font-size: 17px;
+  line-height: 1.65;
+}
+.confirm-dialog::backdrop {
+  background: #0008;
+}
+.confirm-dialog h2 {
+  font-size: 22px;
+  overflow-wrap: anywhere;
+}
+.confirm-dialog button {
+  min-height: 48px;
+}
+.installation-tools {
+  max-width: 1100px;
+  margin: auto;
+  padding: 12px;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  background: var(--surface);
+  color: var(--ink);
+}
+.installation-tools > strong {
+  overflow-wrap: anywhere;
+  max-width: 100%;
+}
+.installation-tools .session-tools {
+  width: 100%;
+  font-size: 15px;
+}
+.installation-tools summary {
+  padding: 10px 0;
+  min-height: 44px;
+}
+.installation-tools button {
+  min-height: 44px;
+}
+.installation-tools:has(+ .control-mode) {
+  display: none;
+}
+.trial-panel {
+  border: 2px solid var(--warning-border);
+  padding: 16px;
+  margin-top: 16px;
+}
+.data-hub .caption,
+.data-hub .point-map-readings li,
+.data-hub .point-map-readings small {
+  font-size: 14px;
+  line-height: 1.6;
+}
+.data-hub label,
+.data-hub p {
+  font-size: 16px;
+  line-height: 1.6;
+}
+.data-hub h3 {
+  font-size: 19px;
+  overflow-wrap: anywhere;
+}
+.data-hub input,
+.data-hub select {
+  min-height: 48px;
+}
+.data-hub .check-row input {
+  min-height: 22px;
+}
+.data-hub .sample-row {
+  font-size: 15px;
+}
+.data-hub .sample-row small,
+.data-hub .sample-tag {
+  font-size: 14px;
+}
+.data-hub .point-map-readings li {
+  display: grid;
+  justify-content: initial;
+}
+.data-hub .reading-note {
+  font-size: 14px;
+}
+.page-stack > .caption {
+  font-size: 14px;
+}
+@media (max-width: 400px) {
+  .setup-brand > .theme-selector {
+    width: 100%;
+    margin: 0;
+  }
+  .action-row > button {
+    max-width: 100%;
+  }
+}
+
+.setup-shell h2 {
+  font-size: 21px;
+  line-height: 1.4;
+  margin: 18px 0;
+}
+.data-hub .card > h2 {
+  font-size: 18px;
+  line-height: 1.4;
+}
+.page-stack .button {
+  font-size: 15px;
+  min-height: 44px;
+}
+.data-hub .sample-row strong,
+.data-hub .sample-values span,
+.data-hub .sample-values small {
+  font-size: 14px;
+  line-height: 1.6;
+}
+input::placeholder {
+  color: var(--muted);
+  opacity: 1;
+}

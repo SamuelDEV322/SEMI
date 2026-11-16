@@ -1,0 +1,488 @@
+:root {
+  --canvas: #edf0ed;
+  --bg: #f5f7f5;
+  --surface: #fff;
+  --ink: #24313a;
+  --muted: #52625a;
+  --border: #c7d2cb;
+  --accent: #286c46;
+  --highlight: #e7eee8;
+  --button-hover: #34434d;
+  --danger-bg: #fff0ed;
+  --danger-border: #c9867d;
+  --danger-text: #93372c;
+  --warning-bg: #f3e7d2;
+  --warning-text: #715020;
+  --warning-border: #d4bb94;
+}
+.point-map-readings {
+  list-style: none;
+  padding: 0;
+  margin: 12px 0;
+  display: grid;
+  gap: 10px;
+}
+.point-map-readings li {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 6px;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 9px;
+  font-size: 13px;
+}
+.point-map-readings small {
+  width: 100%;
+  font-size: 12px;
+  color: var(--muted);
+}
+.plot-point {
+  max-width: 80px;
+  overflow: hidden;
+}
+.plot-point strong {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 80px;
+}
+.drive-feedback {
+  color: var(--muted);
+}
+:root[data-theme="dark"] {
+  --canvas: #0c1410;
+  --bg: #111c16;
+  --surface: #1b2a22;
+  --ink: #e9f1eb;
+  --muted: #b4c5ba;
+  --border: #52675b;
+  --accent: #8bddaa;
+  --highlight: #2b4133;
+  --button-hover: #d6e5db;
+  --danger-bg: #3b2222;
+  --danger-border: #a4665c;
+  --danger-text: #ffb3a7;
+  --warning-bg: #382f20;
+  --warning-text: #f4d39b;
+  --warning-border: #9c8053;
+}
+body {
+  background: var(--canvas);
+  color: var(--ink);
+}
+.app-main {
+  color: var(--ink);
+}
+.button.primary,
+.segmented button[aria-pressed="true"],
+.direction.pressed {
+  background: var(--ink);
+  color: var(--surface);
+  border-color: var(--ink);
+}
+.plot-point strong,
+.plot-point small {
+  background: var(--surface);
+  color: var(--ink);
+}
+.plot-point > span {
+  background: var(--accent);
+  border-color: var(--surface);
+}
+.theme-bar {
+  padding: 10px 20px 0;
+  display: flex;
+  justify-content: flex-end;
+}
+.theme-selector {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+}
+.theme-selector select {
+  width: auto;
+  min-height: 44px;
+  padding: 6px 8px;
+}
+.caption,
+.footnote,
+.reading-note,
+.activity-list small,
+.sample-row small,
+.sample-tag,
+.radar-footer,
+.radar-heading small {
+  font-size: 12px;
+  color: var(--muted);
+}
+.reading-label,
+.activity-list p,
+.status-list small,
+.maintenance label,
+.notice,
+.demo-tools,
+.sample-values,
+.text-button {
+  font-size: 13px;
+}
+.reading-note {
+  min-height: 18px;
+}
+.page-header p,
+.connection,
+.demo-banner {
+  font-size: 12px;
+}
+.demo-banner span {
+  font-size: 11px;
+}
+.gate-label {
+  font-size: 11px;
+}
+.demo-tools summary,
+.text-button {
+  min-height: 44px;
+}
+.section-heading span {
+  font-size: 11px;
+}
+.bottom-nav button {
+  font-size: 12px;
+}
+.status-list > div {
+  font-size: 14px;
+}
+.plot {
+  height: 280px;
+}
+.plot-point strong {
+  font-size: 13px;
+}
+.plot-point small {
+  font-size: 11px;
+}
+.plot-point {
+  max-width: 130px;
+  white-space: normal;
+  text-align: center;
+}
+.plot-point small {
+  line-height: 1.4;
+}
+.point-form {
+  display: grid;
+  gap: 12px;
+  padding-top: 12px;
+}
+.coordinate-grid,
+.filter-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.coordinate-grid p {
+  grid-column: 1/-1;
+}
+label {
+  font-size: 14px;
+}
+input:not([type="checkbox"]),
+select {
+  display: block;
+  background: var(--surface);
+  color: var(--ink);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  min-height: 44px;
+  padding: 8px;
+  width: 100%;
+  max-width: 100%;
+  margin-top: 5px;
+}
+input[type="checkbox"] {
+  accent-color: var(--accent);
+}
+.check-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+}
+.check-row input {
+  width: 22px;
+  height: 22px;
+}
+summary {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  color: var(--ink);
+}
+pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-size: 12px;
+  color: var(--muted);
+}
+.diagnostics {
+  border: 1px solid var(--border);
+  padding: 10px;
+  border-radius: 6px;
+}
+.sample-row {
+  gap: 15px;
+}
+.reading strong small {
+  font-size: 12px;
+}
+.notice {
+  color: var(--ink);
+}
+.notice.danger {
+  color: var(--danger-text);
+}
+.safety-note {
+  color: var(--muted);
+}
+.loading {
+  font-size: 14px;
+}
+/* Dedicated operation surface: normal driving never requires vertical scroll. */
+.control-mode {
+  display: block !important;
+  max-width: none !important;
+  padding: 0 !important;
+  height: 100dvh;
+  overflow: hidden;
+}
+.control-mode .desktop-brand,
+.control-mode .demo-banner,
+.control-mode .page-header,
+.control-mode .connection-line,
+.control-mode .demo-tools,
+.control-mode .bottom-nav,
+.control-mode .theme-bar {
+  display: none !important;
+}
+.control-mode .app-main {
+  height: 100dvh;
+  min-height: 0;
+  border: 0;
+  border-radius: 0;
+  overflow: hidden;
+}
+.control-mode main {
+  height: 100%;
+  padding: 0;
+  overflow: hidden;
+}
+.drive-screen {
+  height: 100%;
+  max-width: 1100px;
+  margin: auto;
+  display: grid;
+  grid-template-rows: 54px 30px minmax(0, 1fr) 30px;
+  padding: env(safe-area-inset-top) 12px env(safe-area-inset-bottom);
+  gap: 4px;
+}
+.drive-top {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+.drive-top .button {
+  min-height: 44px;
+  padding: 8px;
+}
+.drive-top strong {
+  font-size: 18px;
+}
+.drive-connection {
+  margin-left: auto;
+  color: var(--accent);
+  font-size: 12px;
+}
+.drive-connection.offline {
+  color: var(--danger-text);
+}
+.drive-top .theme-selector {
+  font-size: 0;
+  gap: 0;
+}
+.drive-top select {
+  max-width: 78px;
+  font-size: 12px;
+  margin: 0;
+}
+.drive-status {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 13px;
+}
+.drive-status > span {
+  font-size: 11px;
+  color: var(--warning-text);
+}
+.drive-content {
+  min-height: 0;
+  display: grid;
+  grid-template-rows: minmax(100px, 1fr) auto;
+  gap: 8px;
+}
+.drive-perception {
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.drive-perception .radar-panel {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+.drive-perception .radar-panel > svg {
+  min-height: 0;
+  flex: 1;
+  width: 100%;
+  height: 100%;
+  max-height: none;
+}
+.drive-perception .radar-heading {
+  min-height: 25px;
+  padding: 4px 8px;
+  font-size: 12px;
+}
+.drive-perception .radar-heading small {
+  font-size: 11px;
+}
+.drive-perception .radar-footer {
+  font-size: 11px;
+  padding: 3px 8px;
+  line-height: 1.3;
+}
+.drive-commands {
+  display: grid;
+  gap: 5px;
+}
+.drive-commands .hold-help {
+  font-size: 12px;
+  line-height: 1.3;
+}
+.drive-commands .dpad {
+  width: 100%;
+  max-width: 280px;
+  margin: 0 auto;
+  grid-template-rows: repeat(3, 44px);
+  gap: 3px;
+}
+.drive-commands .direction {
+  flex-direction: row;
+  gap: 4px;
+  font-size: 12px;
+  min-height: 44px;
+}
+.drive-commands .direction > span {
+  font-size: 11px;
+}
+.drive-commands .dpad-center {
+  font-size: 10px;
+  color: var(--muted);
+}
+.drive-commands .speed-row {
+  margin: 0;
+  min-height: 44px;
+  font-size: 14px;
+}
+.drive-commands .segmented button {
+  min-width: 78px;
+  font-size: 14px;
+}
+.drive-commands .stop-button {
+  min-height: 48px;
+  font-size: 15px;
+}
+.drive-feedback {
+  font-size: 12px;
+  line-height: 1.3;
+  color: var(--muted);
+  min-height: 30px;
+}
+.drive-footer {
+  font-size: 11px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted);
+}
+.drive-diagnostics summary {
+  font-size: 11px;
+  min-height: 24px;
+}
+.drive-diagnostics[open] {
+  position: absolute;
+  z-index: 20;
+  inset: auto 12px 34px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  padding: 10px;
+  max-height: 35dvh;
+  overflow: auto;
+}
+.control-mode .loading {
+  height: 100%;
+}
+@media (min-width: 700px), (orientation: landscape) {
+  .drive-content {
+    grid-template-columns: minmax(0, 1fr) minmax(280px, 1fr);
+    grid-template-rows: minmax(0, 1fr);
+    align-items: stretch;
+    gap: 18px;
+  }
+  .drive-commands {
+    align-content: center;
+  }
+  .drive-screen {
+    grid-template-rows: 54px 30px minmax(0, 1fr) 30px;
+  }
+  .drive-perception .radar-panel {
+    max-height: 600px;
+  }
+  .drive-commands .dpad {
+    grid-template-rows: repeat(3, 54px);
+    max-width: 330px;
+  }
+  .drive-feedback {
+    min-height: 32px;
+  }
+}
+@media (orientation: landscape) and (max-height: 500px) {
+  .drive-screen {
+    grid-template-rows: 44px 24px minmax(0, 1fr) 22px;
+    gap: 2px;
+  }
+  .drive-commands .dpad {
+    grid-template-rows: repeat(3, 44px);
+  }
+  .drive-commands {
+    gap: 2px;
+  }
+  .drive-feedback,
+  .drive-commands .hold-help {
+    display: none;
+  }
+  .drive-top .theme-selector {
+    display: none;
+  }
+  .drive-commands .stop-button {
+    min-height: 44px;
+  }
+  .drive-commands .speed-row {
+    min-height: 44px;
+  }
+  .drive-footer {
+    font-size: 10px;
+  }
+}

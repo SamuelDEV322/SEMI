@@ -1,0 +1,106 @@
+SEMI/
+├── backend/
+│   ├── adapters/
+│   │   ├── __init__.py
+│   │   ├── contracts.py
+│   │   ├── mock.py
+│   │   └── registry.py
+│   ├── apps/
+│   │   ├── agriculture/
+│   │   │   ├── management/
+│   │   │   │   ├── commands/
+│   │   │   │   │   ├── __init__.py
+│   │   │   │   │   └── seed_demo.py
+│   │   │   │   └── __init__.py
+│   │   │   ├── migrations/
+│   │   │   │   ├── 0001_initial.py
+│   │   │   │   └── __init__.py
+│   │   │   ├── __init__.py
+│   │   │   ├── models.py
+│   │   │   ├── serializers.py
+│   │   │   └── tests.py
+│   │   ├── lidar/
+│   │   │   └── __init__.py
+│   │   ├── robot/
+│   │   │   ├── __init__.py
+│   │   │   └── serializers.py
+│   │   ├── telemetry/
+│   │   │   ├── migrations/
+│   │   │   │   ├── 0001_initial.py
+│   │   │   │   └── __init__.py
+│   │   │   ├── __init__.py
+│   │   │   └── models.py
+│   │   └── __init__.py
+│   ├── config/
+│   │   ├── __init__.py
+│   │   ├── errors.py
+│   │   ├── security.py
+│   │   ├── settings.py
+│   │   ├── urls.py
+│   │   ├── views.py
+│   │   └── wsgi.py
+│   ├── manage.py
+│   ├── requirements-dev.txt
+│   ├── requirements-lock.txt
+│   └── requirements.txt
+├── docs/
+│   ├── evidence/
+│   │   ├── 1440-Control.png
+│   │   ├── 1440-Datos.png
+│   │   ├── 1440-Estado.png
+│   │   ├── 1440-Inicio.png
+│   │   ├── 390-Control.png
+│   │   ├── 390-Datos.png
+│   │   ├── 390-Estado.png
+│   │   ├── 390-Inicio.png
+│   │   ├── 768-Control.png
+│   │   ├── 768-Datos.png
+│   │   ├── 768-Estado.png
+│   │   ├── 768-Inicio.png
+│   │   ├── backend-tests.txt
+│   │   ├── browser-tests.txt
+│   │   ├── django-check.txt
+│   │   ├── frontend-build.txt
+│   │   ├── migrations-check.txt
+│   │   └── pip-check.txt
+│   ├── API_CONTRACTS.md
+│   ├── ARCHITECTURE.md
+│   ├── FIGMA_AUDIT.md
+│   ├── HARDWARE_STATUS.md
+│   ├── PROJECT_TREE.txt
+│   ├── ROADMAP.md
+│   └── TEST_RESULTS.md
+├── frontend/
+│   ├── e2e/
+│   │   └── gate1.spec.ts
+│   ├── src/
+│   │   ├── components/
+│   │   │   ├── Charts.tsx
+│   │   │   ├── LidarRadar.tsx
+│   │   │   └── ui.tsx
+│   │   ├── hooks/
+│   │   │   ├── useManualControl.ts
+│   │   │   └── usePolling.ts
+│   │   ├── pages/
+│   │   │   ├── Control.tsx
+│   │   │   ├── Data.tsx
+│   │   │   ├── Home.tsx
+│   │   │   └── Status.tsx
+│   │   ├── services/
+│   │   │   ├── api.ts
+│   │   │   └── session.ts
+│   │   ├── styles/
+│   │   │   └── main.css
+│   │   ├── types/
+│   │   │   └── api.ts
+│   │   ├── App.tsx
+│   │   └── main.tsx
+│   ├── index.html
+│   ├── package-lock.json
+│   ├── package.json
+│   ├── playwright.config.ts
+│   ├── tsconfig.json
+│   └── vite.config.ts
+├── .env.example
+├── .gitignore
+└── README.md

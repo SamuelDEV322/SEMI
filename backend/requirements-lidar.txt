@@ -1,0 +1,3 @@
+# Optional USB diagnostic transport only. Installing this never opens a port.
+-r requirements.txt
+pyserial==3.5

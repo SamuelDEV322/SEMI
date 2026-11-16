@@ -1,0 +1,4 @@
+# Direct runtime dependencies, pinned to the existing Gate 4 environment.
+Django==5.2.19
+djangorestframework==3.18.3
+python-dotenv==1.2.4

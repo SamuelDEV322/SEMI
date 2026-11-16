@@ -1,0 +1,4 @@
+# Django's test runner uses the standard library; no pytest plugin is required.
+# Playwright/TypeScript tooling is declared in frontend/package.json.
+-r requirements.txt
+black==26.10.1
