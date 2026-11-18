@@ -53,7 +53,7 @@ class UnifiedLidarTests(SimpleTestCase):
             + packet(0)
         )
         snapshots = []
-        original = Path.replace
+        original = os.replace
 
         def publish(path, target):
             value = original(path, target)
@@ -71,8 +71,8 @@ class UnifiedLidarTests(SimpleTestCase):
         ), patch("builtins.input", return_value="INICIAR A1"), patch(
             "apps.agriculture.management.commands.lidar_usb.time.sleep",
             side_effect=KeyboardInterrupt,
-        ), patch.object(
-            Path, "replace", publish
+        ), patch(
+            "adapters.lidar_ipc.os.replace", publish
         ):
             call_command(
                 "lidar_usb",

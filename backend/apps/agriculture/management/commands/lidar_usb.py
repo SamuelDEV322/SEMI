@@ -1,11 +1,10 @@
 import os
-import json
 import time
 from datetime import datetime, timezone
 from django.core.management import BaseCommand, CommandError
 from adapters.a1 import SerialLidarProvider, frame
 from adapters.lidar_sources import spool_path
-from adapters.lidar_ipc import reader_lock, local_host
+from adapters.lidar_ipc import reader_lock, local_host, publish_atomic, PublicationError
 
 
 class Command(BaseCommand):
@@ -58,12 +57,11 @@ class Command(BaseCommand):
                     "heartbeat_monotonic": time.monotonic(),
                 },
             }
-            temporary = path.with_suffix(".tmp")
-            temporary.write_text(json.dumps(value, allow_nan=False), encoding="utf8")
-            temporary.replace(path)
+            publish_atomic(path, value)
 
         failure = None
         terminal = None
+        publication_failed = False
         try:
             publish(frame("no_data"))
             reader.start(confirmed=True)
@@ -80,16 +78,31 @@ class Command(BaseCommand):
                 time.sleep(0.01)
         except KeyboardInterrupt:
             pass
+        except PublicationError as error:
+            publication_failed = True
+            raise CommandError(str(error)) from error
         except Exception as error:
             phase = "failed"
             failure = str(error)
-            publish(frame("error", error=str(error)))
             raise CommandError(str(error))
         finally:
             phase = "failed" if failure or terminal else "closed"
-            reader.close()
-            publish(
-                frame("error", error=failure)
-                if failure
-                else terminal or reader.latest()
-            )
+            try:
+                reader.close()
+            except Exception as error:
+                if publication_failed or failure:
+                    self.stderr.write(f"Reader cleanup also failed: {error}")
+                else:
+                    raise CommandError(f"Reader cleanup failed: {error}") from error
+            if not publication_failed:
+                try:
+                    publish(
+                        frame("error", error=failure)
+                        if failure
+                        else terminal or reader.latest()
+                    )
+                except PublicationError as error:
+                    if failure:
+                        self.stderr.write(str(error))
+                    else:
+                        raise CommandError(str(error)) from error
