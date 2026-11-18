@@ -3,6 +3,7 @@ import type { Source } from "./types/api";
 export interface RuntimeProfile {
   mode: "operational" | "demonstration";
   dev_tools: boolean;
+  device_integration?: "disabled" | "diagnostic";
   lidar_source: Source;
   npk_capture: boolean;
   physical_control: false;

@@ -1,3 +1,5 @@
+> Gate 5A/5B (2026-11-17): recepción HTTP autenticada en diagnóstico, sin control físico. Contrato vigente de dispositivo: [GATE5A_CONTRACTS.md](GATE5A_CONTRACTS.md); implementación y pruebas: [GATE5B_IMPLEMENTATION.md](GATE5B_IMPLEMENTATION.md).
+
 > Actualización 2026-11-16: el perfil predeterminado es operativo, sin fuentes sintéticas ni cambio de origen desde UI/API. Consultar [OPERATING_PROFILE.md](OPERATING_PROFILE.md) para el contrato vigente y los límites físicos. Las secciones de Gates anteriores conservan su contexto histórico.
 
 > Actualización Gate 2: consultar [GATE2.md](GATE2.md). El contenido Gate 1 se conserva como antecedente.

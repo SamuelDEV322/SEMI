@@ -9,7 +9,8 @@
     "preview": "vite preview --host 127.0.0.1",
     "test:e2e": "playwright test",
     "format": "prettier --write src e2e *.ts *.json index.html",
-    "test:mvp": "playwright test --config playwright.operational.config.ts"
+    "test:mvp": "playwright test --config playwright.operational.config.ts",
+    "test:device": "playwright test --config playwright.device.config.ts"
   },
   "dependencies": {
     "@fontsource/inter": "5.3.0",

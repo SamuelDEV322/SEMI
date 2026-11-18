@@ -284,7 +284,9 @@ export function Data({
             <p>
               {demo
                 ? "Solo demostración. No se utiliza una sonda física."
-                : "Sensor de suelo no conectado. No se ha tomado ninguna medición."}
+                : runtime.device_integration === "diagnostic"
+                  ? "Las muestras de suelo todavía no están disponibles. La lectura sin calibrar se consulta en Estado."
+                  : "Sensor de suelo no conectado. No se ha tomado ninguna medición."}
             </p>
             <p role="status">{notice}</p>
             <ErrorNotice message={error} />

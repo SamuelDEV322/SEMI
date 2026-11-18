@@ -270,8 +270,9 @@ function InstallationFlow() {
                   </button>
                   {!runtime.npk_capture && (
                     <p>
-                      Sensor de suelo no conectado. No se ha tomado ninguna
-                      medición.
+                      {runtime.device_integration === "diagnostic"
+                        ? "Las muestras de suelo todavía no están disponibles. La lectura sin calibrar se consulta en Estado."
+                        : "Sensor de suelo no conectado. No se ha tomado ninguna medición."}
                     </p>
                   )}
                   {point.latest_sample && (

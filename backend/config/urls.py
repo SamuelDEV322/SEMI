@@ -2,7 +2,12 @@ from django.urls import path
 from . import views
 from apps.agriculture.setup_views import setup, surface_trial
 
+from apps.devices.views import NextCommandView, TelemetryView, StatusView
+
 urlpatterns = [
+    path("api/device/commands/next/", NextCommandView.as_view()),
+    path("api/device/telemetry/", TelemetryView.as_view()),
+    path("api/device/status/", StatusView.as_view()),
     path("api/setup/", setup),
     path("api/demo/surface/", surface_trial),
     path("api/lidar/source/", views.lidar_source),

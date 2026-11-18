@@ -66,6 +66,11 @@ def health(request):
                 "database": "sqlite",
                 "csrf_token": get_token(request),
                 "physical_control": False,
+                "device_integration": (
+                    settings.SEMI_DEVICE_INTEGRATION
+                    if not registry.is_demonstration()
+                    else "disabled"
+                ),
                 "mode": settings.SEMI_MODE,
                 "dev_tools": settings.SEMI_DEV_TOOLS,
                 "lidar_source": settings.SEMI_LIDAR_SOURCE,
@@ -81,7 +86,7 @@ def robot_status(request):
     data["telemetry"] = (
         MockTelemetryProvider(robot_for(request)).latest()
         if registry.is_demonstration()
-        else registry.unconfigured_robot.telemetry()
+        else data.get("telemetry", registry.unconfigured_robot.telemetry())
     )
     data["events"] = list(
         (

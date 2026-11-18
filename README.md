@@ -201,6 +201,19 @@ Los contratos de `RobotProvider`, `TelemetryProvider`, `NPKProvider` y `LidarPro
 
 La guía de prueba asíncrona para el compañero está en [docs/OPERATING_PROFILE.md](docs/OPERATING_PROFILE.md). No iniciar el lector sin revisar su puerto, revisión y kit compatible: puede girar el motor del propio LiDAR. No controla las orugas.
 
+## Gate 5A/5B: recepción ESP32 en diagnóstico
+
+La nueva app `backend/apps/devices` recibe telemetría/heartbeats autenticados, con sesión, secuencias e idempotencia persistentes. Conserva ADC original y tensión si son enviados; no produce porcentajes calibrados ni NPK. La conexión se muestra como diagnóstico, con movimiento físico bloqueado.
+
+Está **deshabilitada por defecto**. `SEMI_MODE` conserva sus valores; `SEMI_DEVICE_INTEGRATION` solo admite `disabled|diagnostic`. Credenciales por dispositivo en `SEMI_DEVICE_TOKENS`, fuera de Git y del frontend. No hay una opción que habilite control físico.
+
+- [Contrato Gate 5A](docs/GATE5A_CONTRACTS.md): rutas, JSON, autenticación, secuencias, sesiones, vencimientos y fallos.
+- [Implementación y ejecución Gate 5B](docs/GATE5B_IMPLEMENTATION.md): registro local, pruebas aisladas y límites.
+- Desde SEMI: `.\.venv\Scripts\python.exe backend\manage.py test apps.agriculture apps.lidar apps.devices`.
+- Desde frontend: `npm.cmd run test:device`. Ejecutarlo secuencialmente respecto a `test:e2e` y `test:mvp`; comparten únicamente e2e.sqlite3.
+
+El firmware original del compañero no se modifica. La prueba del contrato usa clientes sintéticos; no demuestra un ESP32 conectado. USB/LiDAR conserva su integración separada y su inicio manual.
+
 ## Hardware, seguridad y límites
 
 - RPLidar A1 confirmado como componente, sin adquisición física validada en esta entrega. No proporciona por sí solo GPS ni clasificación de materiales.

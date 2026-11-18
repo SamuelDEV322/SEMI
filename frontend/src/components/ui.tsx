@@ -24,7 +24,8 @@ export function Connection({
   robot: RobotStatus | null;
   error?: string | null;
 }) {
-  const online = robot?.connection === "simulated_online";
+  const diagnostic = robot?.connection === "diagnostic_online";
+  const online = robot?.connection === "simulated_online" || diagnostic;
   return (
     <span className={`connection ${online ? "" : "offline"}`}>
       {online ? <Wifi size={14} /> : <WifiOff size={14} />}{" "}
@@ -32,11 +33,13 @@ export function Connection({
         ? "Sin conexión con el sistema"
         : !robot
           ? "Conectando…"
-          : online
-            ? "Conectado · simulado"
-            : robot.source === "real"
-              ? "Vehículo no conectado"
-              : "Desconectado · simulado"}
+          : diagnostic
+            ? "Conexión establecida · diagnóstico"
+            : online
+              ? "Conectado · simulado"
+              : robot.source === "real"
+                ? "Vehículo no conectado"
+                : "Desconectado · simulado"}
     </span>
   );
 }

@@ -50,6 +50,10 @@ def surface_blocks(plot):
 
 def robot_for(request):
     if not registry.is_demonstration():
+        if settings.SEMI_DEVICE_INTEGRATION == "diagnostic":
+            from adapters.esp32_diagnostic import Esp32DiagnosticProvider
+
+            return Esp32DiagnosticProvider(scope(request))
         return registry.unconfigured_robot
     p = scope(request)
     if p and p.demo:

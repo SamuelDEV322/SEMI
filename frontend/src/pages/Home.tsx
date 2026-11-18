@@ -20,11 +20,13 @@ export function Home({
           <Activity size={16} />
           {!robot || robot.state === "unavailable"
             ? "Estado del vehículo sin confirmar"
-            : robot.state === "moving_simulated"
-              ? "Movimiento simulado"
-              : robot?.state === "fault"
-                ? "Fallo simulado"
-                : "Detenido · simulación"}
+            : robot.state === "diagnostic"
+              ? "Conexión establecida · pruebas sin movimiento"
+              : robot.state === "moving_simulated"
+                ? "Movimiento simulado"
+                : robot?.state === "fault"
+                  ? "Fallo simulado"
+                  : "Detenido · simulación"}
         </div>
         <div className="battery-summary">
           <BatteryMedium size={27} />

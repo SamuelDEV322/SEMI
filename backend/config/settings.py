@@ -1,4 +1,5 @@
 import os
+import json
 from pathlib import Path
 from django.core.exceptions import ImproperlyConfigured
 from dotenv import load_dotenv
@@ -26,9 +27,30 @@ if SEMI_MODE == "operational" and SEMI_LIDAR_SOURCE != "real":
     raise ImproperlyConfigured(
         "Operational mode requires a real LiDAR source; no mock fallback"
     )
+if SEMI_MODE == "demonstration" and SEMI_LIDAR_SOURCE == "real":
+    raise ImproperlyConfigured("Demonstration cannot consume a physical LiDAR source")
 SEMI_DEV_TOOLS = (
     DEBUG and SEMI_MODE == "demonstration" and os.getenv("SEMI_DEV_TOOLS", "0") == "1"
 )
+# Physical operational control is deliberately not a supported configuration.
+SEMI_DEVICE_INTEGRATION = os.getenv("SEMI_DEVICE_INTEGRATION", "disabled")
+if SEMI_DEVICE_INTEGRATION not in {"disabled", "diagnostic"}:
+    raise ImproperlyConfigured(
+        "Only disabled or diagnostic device integration is supported"
+    )
+try:
+    SEMI_DEVICE_TOKENS = json.loads(os.getenv("SEMI_DEVICE_TOKENS", "{}"))
+    if not isinstance(SEMI_DEVICE_TOKENS, dict) or any(
+        not isinstance(key, str)
+        or not isinstance(value, str)
+        or not 32 <= len(value) <= 512
+        for key, value in SEMI_DEVICE_TOKENS.items()
+    ):
+        raise ValueError()
+except (ValueError, TypeError):
+    raise ImproperlyConfigured(
+        "Invalid device credential configuration; contents withheld"
+    ) from None
 INSTALLED_APPS = [
     "django.contrib.contenttypes",
     "django.contrib.auth",
@@ -36,6 +58,7 @@ INSTALLED_APPS = [
     "apps.agriculture",
     "apps.telemetry",
     "apps.lidar",
+    "apps.devices",
 ]
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",

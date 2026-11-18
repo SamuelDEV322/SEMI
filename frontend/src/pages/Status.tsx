@@ -1,3 +1,4 @@
+import { DeviceReadings } from "../components/DeviceReadings";
 import { useRuntime } from "../Runtime";
 import { AlertTriangle, Info, Check, Radio } from "lucide-react";
 import type { RobotStatus, Scan } from "../types/api";
@@ -11,18 +12,31 @@ export function Status({
 }) {
   const runtime = useRuntime();
   const demo = runtime.mode === "demonstration";
+  const soil = robot?.telemetry.device_reading?.sensors.soil_moisture_adc;
+  const soilStatus =
+    !soil || soil.status === "unavailable"
+      ? "Sensor de suelo no disponible"
+      : soil.status !== "valid"
+        ? "No se pudo obtener una lectura válida"
+        : robot?.telemetry.device_reading?.freshness === "stale"
+          ? "Lectura sin calibrar · desactualizada"
+          : "Lectura recibida · sin calibrar";
   const rows = [
     [
       "Locomoción",
       demo
         ? "Demostración · movimiento físico no disponible"
-        : "Vehículo no conectado · control no disponible",
+        : robot?.connection === "diagnostic_online"
+          ? "Conexión de diagnóstico · movimiento no disponible"
+          : "Vehículo no conectado · control no disponible",
     ],
     [
       "Humedad del suelo",
       demo
         ? "Demostración · sensor de suelo no conectado"
-        : "Sensor de suelo no conectado",
+        : soil
+          ? soilStatus
+          : "Sensor de suelo no conectado",
     ],
     [
       "Sensor NPK",
@@ -41,6 +55,7 @@ export function Status({
   ];
   return (
     <div className="page-stack">
+      <DeviceReadings robot={robot} />
       <Card title="Energía y batería">
         <Reading
           label="Carga estimada"
@@ -116,7 +131,9 @@ export function Status({
             <strong>
               {robot?.connection === "simulated_online"
                 ? "Enlace simulado activo"
-                : "Enlace no disponible"}
+                : robot?.connection === "diagnostic_online"
+                  ? "Conexión establecida · diagnóstico"
+                  : "Enlace no disponible"}
             </strong>
             <p className="caption">
               {demo

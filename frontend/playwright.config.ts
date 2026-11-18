@@ -22,6 +22,8 @@ export default defineConfig({
       url: "http://127.0.0.1:8002/api/health/",
       reuseExistingServer: false,
       env: {
+        SEMI_DEVICE_INTEGRATION: "disabled",
+        SEMI_DEVICE_TOKENS: "{}",
         SEMI_MODE: "demonstration",
         SEMI_DEV_TOOLS: "1",
         SEMI_LIDAR_SOURCE: "mock",

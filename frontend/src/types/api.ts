@@ -37,13 +37,53 @@ export interface ControlState {
   command_ttl_ms: number;
   owner: string | null;
 }
+export interface DeviceReading {
+  message_id: string;
+  sampling_point_id: number | null;
+  source: "real";
+  measured_at: string | null;
+  received_at: string;
+  age_ms: number | null;
+  freshness: "fresh" | "stale";
+  sensors: {
+    soil_moisture_adc?: {
+      value: number | null;
+      adc_max?: number | null;
+      status: "valid" | "invalid" | "error" | "unavailable";
+      sensor_id?: string;
+    };
+    battery?: {
+      voltage_v: number | null;
+      status: "valid" | "invalid" | "error" | "unavailable";
+      sensor_id?: string;
+    };
+  };
+}
 export interface RobotStatus {
+  device?: {
+    device_id: string;
+    firmware: string | null;
+    last_seen: string | null;
+    age_ms: number | null;
+    integration: "diagnostic";
+    authorization: { telemetry: boolean; motion: false };
+    errors: string[] | null;
+  } | null;
   surface_trial?: { state: string; blocked: boolean; source: "simulation" };
   source: Source;
   hardware_connected: boolean;
-  connection: "simulated_online" | "simulated_offline" | "disconnected";
+  connection:
+    | "simulated_online"
+    | "simulated_offline"
+    | "disconnected"
+    | "diagnostic_online";
   scenario: Scenario;
-  state: "stopped_simulated" | "moving_simulated" | "fault" | "unavailable";
+  state:
+    | "stopped_simulated"
+    | "moving_simulated"
+    | "fault"
+    | "unavailable"
+    | "diagnostic";
   control: ControlState;
   capabilities: {
     manual_control: boolean;
@@ -54,6 +94,7 @@ export interface RobotStatus {
     inclination: false;
   };
   telemetry: {
+    device_reading?: DeviceReading;
     battery: {
       value: number | null;
       unit: string;

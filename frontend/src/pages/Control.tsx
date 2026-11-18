@@ -61,8 +61,14 @@ export function Control({
           Salir
         </button>
         <strong>SEMI</strong>
-        <span className={`drive-connection ${online ? "" : "offline"}`}>
-          {online ? "● Conectado · demo" : "○ Sin conexión"}
+        <span
+          className={`drive-connection ${online || robot?.connection === "diagnostic_online" ? "" : "offline"}`}
+        >
+          {robot?.connection === "diagnostic_online"
+            ? "● Diagnóstico"
+            : online
+              ? "● Conectado · demo"
+              : "○ Sin conexión"}
         </span>
         <ThemeSelector />
       </header>
