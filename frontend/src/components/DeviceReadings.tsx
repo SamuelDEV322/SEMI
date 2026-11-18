@@ -8,10 +8,8 @@ export function DeviceReadings({ robot }: { robot: RobotStatus | null }) {
   const adc = reading?.sensors.soil_moisture_adc;
   const stale = reading?.freshness === "stale";
   return (
-    <Card title="Datos del vehículo en pruebas">
-      <p>
-        {deviceMessage(robot)}. Movimiento no disponible durante las pruebas.
-      </p>
+    <Card title="Sensor de humedad">
+      <p>{deviceMessage(robot)}</p>
       {!reading ? (
         <p>Esperando datos del sensor.</p>
       ) : (
@@ -21,17 +19,19 @@ export function DeviceReadings({ robot }: { robot: RobotStatus | null }) {
             <>
               <Reading
                 label="Lectura del sensor de suelo"
-                value={adc.status === "valid" ? adc.value : null}
+                value={adc.value}
                 unit="ADC"
                 stale={stale}
                 note="Lectura sin calibrar"
               />
               <p>
-                {adc.status === "error" || adc.status === "invalid"
-                  ? "No se pudo obtener una lectura válida del suelo."
-                  : adc.status === "unavailable"
-                    ? "Sensor de suelo no disponible."
-                    : "Esta lectura todavía no representa un porcentaje de humedad."}
+                {adc.value === 0
+                  ? "ADC en cero. Comprueba GPIO, alimentación y cableado."
+                  : adc.status === "error" || adc.status === "invalid"
+                    ? "No se pudo obtener una lectura válida del suelo."
+                    : adc.status === "unavailable"
+                      ? "Sensor de suelo no disponible."
+                      : "Esta lectura todavía no representa un porcentaje de humedad."}
               </p>
             </>
           )}

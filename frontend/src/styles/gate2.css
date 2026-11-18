@@ -595,3 +595,28 @@ pre {
     font-size: 10px;
   }
 }
+
+.rack-buttons.supervised {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.soil-readings .reading:not(:first-child) .reading-note {
+  align-self: flex-start;
+  width: fit-content;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 1px 6px;
+}
+@media (max-width: 520px) {
+  .reading-grid.three.soil-readings {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .soil-readings > .reading:first-child {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: center;
+  }
+  .soil-readings > .reading:first-child .reading-note {
+    grid-column: 1 / -1;
+  }
+}

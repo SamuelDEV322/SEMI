@@ -13,8 +13,8 @@ async function scenario(page: Page, domain: string, value: string) {
   expect(response.ok()).toBeTruthy();
 }
 async function control(page: Page) {
-  await page.goto("/");
   await scenario(page, "all", "connected");
+  await page.goto("/");
   await page
     .getByRole("navigation")
     .getByRole("button", { name: "Control", exact: true })

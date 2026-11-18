@@ -214,7 +214,7 @@ class ApiBridge {
       return false;
     }
     JsonVariantConst info = response["data"];
-    healthy_ = info["physical_control"] == false &&
+    healthy_ = (info["physical_control"] == false || info["supervised_control"] == true) &&
                info["device_integration"] == "diagnostic";
     if (!healthy_) {
       state_ = LinkState::ProtocolBlocked;
@@ -241,7 +241,7 @@ class ApiBridge {
     JsonObject sensor = data["sensors"]["soil_moisture_adc"].to<JsonObject>();
     sensor["value"] = raw;
     sensor["adc_max"] = 4095;
-    sensor["status"] = "valid";  // Valor de ADC plausible, NO calibrado.
+    sensor["status"] = raw == 0 ? "invalid" : "valid";  // Valor de ADC plausible, NO calibrado.
     if (!serializeJson(data, telemetryPending_)) return blockOnSequenceFailure();
     return telemetryPending_.length() > 0;
   }
@@ -255,12 +255,20 @@ class ApiBridge {
     data["message_id"] = uuidV4();
     data["seq"] = seq;
     data["measured_at"] = nullptr;
+#ifdef SEMI_MOTOR_KEY
+    data["firmware"] = "SEMI-Gate6.4-Supervised/1.0";
+#else
     data["firmware"] = "SEMI-Gate6-Diagnostic/0.1";
+#endif
     data["uptime_ms"] = static_cast<uint32_t>(millis() - bootMs_);
     data["firmware_state"] = "ready";
     data["reported_motion"] = "unknown"; // No se verifica estado fisico.
     data["capabilities"]["telemetry"] = true;
+#if defined(SEMI_MOTOR_KEY) && SEMI_TRACTION_VERIFIED
+    data["capabilities"]["motion"] = true; // Build capability, never an arm grant.
+#else
     data["capabilities"]["motion"] = false;
+#endif
     data["errors"].to<JsonArray>();
     if (!serializeJson(data, statusPending_)) return blockOnSequenceFailure();
     return statusPending_.length() > 0;

@@ -1,3 +1,4 @@
+import { AdcHistory } from "../components/AdcHistory";
 import { useState, useEffect, useCallback } from "react";
 import { usePolling } from "../hooks/usePolling";
 import { api } from "../services/api";
@@ -223,6 +224,13 @@ export function Data({
           />
         </details>
       </Card>
+      {!demo && (
+        <AdcHistory
+          plotId={plot.id}
+          point={point?.id}
+          pointName={point?.display_name || point?.name}
+        />
+      )}
       {point && !pointsError && (
         <>
           <Card title="Resultados">
@@ -285,7 +293,7 @@ export function Data({
               {demo
                 ? "Solo demostración. No se utiliza una sonda física."
                 : runtime.device_integration === "diagnostic"
-                  ? "Las muestras de suelo todavía no están disponibles. La lectura sin calibrar se consulta en Estado."
+                  ? "No tenemos sensor NPK. Consulta el historial del sensor de humedad en esta pantalla."
                   : "Sensor de suelo no conectado. No se ha tomado ninguna medición."}
             </p>
             <p role="status">{notice}</p>

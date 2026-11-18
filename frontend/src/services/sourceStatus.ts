@@ -5,6 +5,8 @@ export function deviceMessage(
 ) {
   if (error) return "Sin conexión con el sistema";
   if (!robot) return "Conectando…";
+  if (robot.manual?.traction.ready || robot.manual?.rack.ready)
+    return "Robot conectado";
   const reasons: Record<string, string> = {
     integration_disabled: "Conexión del vehículo sin configurar",
     device_unregistered: "Vehículo sin registrar",
@@ -13,8 +15,8 @@ export function deviceMessage(
     registered_waiting: "Vehículo registrado, esperando comunicación",
     session_waiting: "Esperando comunicación de la sesión actual",
     clock_invalid: "No pudimos confirmar la última comunicación",
-    heartbeat_recent: "Conexión establecida · diagnóstico",
-    telemetry_recent: "Conexión establecida · diagnóstico",
+    heartbeat_recent: "Robot conectado",
+    telemetry_recent: "Robot conectado",
     disconnected: "Robot desconectado",
   };
   if (robot.diagnostics?.reason)
@@ -24,7 +26,7 @@ export function deviceMessage(
   return robot.connection === "simulated_online"
     ? "Conectado · simulado"
     : robot.connection === "diagnostic_online"
-      ? "Conexión establecida · diagnóstico"
+      ? "Robot conectado"
       : robot.source === "real"
         ? "Vehículo no conectado"
         : "Desconectado · simulado";

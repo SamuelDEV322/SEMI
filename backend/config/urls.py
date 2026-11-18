@@ -4,7 +4,14 @@ from apps.agriculture.setup_views import setup, surface_trial
 
 from apps.devices.views import NextCommandView, TelemetryView, StatusView
 
+from apps.devices.locations import adc_history, plots
+from apps.devices.manual import BenchPoll, manual_control
+
 urlpatterns = [
+    path("api/device/bench/", BenchPoll.as_view()),
+    path("api/control/manual/", manual_control),
+    path("api/measurements/adc/", adc_history),
+    path("api/setup/plots/", plots),
     path("api/device/commands/next/", NextCommandView.as_view()),
     path("api/device/telemetry/", TelemetryView.as_view()),
     path("api/device/status/", StatusView.as_view()),

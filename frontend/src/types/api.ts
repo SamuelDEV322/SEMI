@@ -60,6 +60,8 @@ export interface DeviceReading {
   };
 }
 export interface RobotStatus {
+  manual?: import("../services/manual").ManualState;
+  manual_device?: string;
   rack?: RackStatus;
   diagnostics?: {
     integration: "disabled" | "diagnostic";
@@ -76,7 +78,7 @@ export interface RobotStatus {
     last_seen: string | null;
     age_ms: number | null;
     integration: "diagnostic";
-    authorization: { telemetry: boolean; motion: false };
+    authorization: { telemetry: boolean; motion: boolean };
     errors: string[] | null;
   } | null;
   surface_trial?: { state: string; blocked: boolean; source: "simulation" };
@@ -98,7 +100,7 @@ export interface RobotStatus {
   capabilities: {
     manual_control: boolean;
     npk_capture: boolean;
-    physical_motion: false;
+    physical_motion: boolean;
     camera: false;
     ambient: false;
     inclination: false;
@@ -196,14 +198,17 @@ export interface RackStatus {
   device_id: string | null;
   source: Source;
   available: boolean;
-  connection: "simulated_online" | "simulated_offline" | "unavailable";
+  connection:
+    "simulated_online" | "simulated_offline" | "online" | "unavailable";
   state:
     | "stopped_simulated"
+    | "ready"
+    | "command_active"
     | "raising_simulated"
     | "lowering_simulated"
     | "unavailable"
     | "error";
-  physical_authorized: false;
+  physical_authorized: boolean;
   execution_state: "unverified";
   control: (Omit<ControlState, "action"> & { action: RackAction }) | null;
   diagnostic: string | null;

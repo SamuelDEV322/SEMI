@@ -107,9 +107,7 @@ for (const width of [360, 390, 768, 1440])
       await page.goto("/");
       await page.getByLabel("Apariencia").selectOption(theme);
       await expect(
-        page
-          .getByText("Conexión establecida · diagnóstico", { exact: true })
-          .first(),
+        page.getByText("Robot conectado", { exact: true }).first(),
       ).toBeVisible();
       for (const screen of ["Inicio", "Datos", "Estado", "Control"]) {
         await nav(page, screen);
@@ -198,9 +196,7 @@ test("empty stale error and lost device do not create calibrated measurements", 
   );
   await page.reload();
   await expect(
-    page.getByText(
-      "Robot desconectado. Movimiento no disponible durante las pruebas.",
-    ),
+    page.getByText("Robot desconectado", { exact: true }).first(),
   ).toBeVisible();
   expect(
     (await (await page.request.get("/api/npk/samples/")).json()).data,
@@ -247,12 +243,93 @@ test("raw soil data does not masquerade as an agricultural sample", async ({
   await page.goto("/#data");
   await expect(
     page.getByText(
-      "Las muestras de suelo todavía no están disponibles. La lectura sin calibrar se consulta en Estado.",
+      "No tenemos sensor NPK. Consulta el historial del sensor de humedad en esta pantalla.",
     ),
   ).toBeVisible();
   await expect(
     page.getByRole("button", { name: "Tomar medición", exact: true }),
   ).toBeDisabled();
+  expect(
+    (await (await page.request.get("/api/npk/samples/")).json()).data,
+  ).toEqual([]);
+});
+
+test("lectura ADC asociada manualmente y ejemplos N/K estables por sesión", async ({
+  page,
+}) => {
+  await fixture(page);
+  const csrf = (await (await page.request.get("/api/health/")).json()).data
+    .csrf_token;
+  const response = await page.request.post("/api/setup/", {
+    headers: { "X-CSRFToken": csrf },
+    data: { action: "point", name: "Sombra del cafeto" },
+  });
+  expect(response.ok()).toBeTruthy();
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/?semilla=64#home");
+  const cards = page.locator(".reading-grid .reading");
+  await expect(cards.nth(0)).toContainText("ADC");
+  await expect(cards.nth(1)).toContainText("Simulado");
+  await expect(cards.nth(2)).toContainText("Simulado");
+  const numbers = await cards.locator("strong").allTextContents();
+  await page.reload();
+  await expect(cards.locator("strong")).toHaveText(numbers);
+  async function capture(name: string) {
+    const marker = await page.evaluateHandle(() => {
+      const el = document.createElement("div");
+      el.textContent = "PRUEBA DE INTERFAZ · SIN HARDWARE";
+      Object.assign(el.style, {
+        position: "fixed",
+        right: "4px",
+        top: "2px",
+        zIndex: "1000",
+        background: "#203528",
+        color: "white",
+        font: "bold 9px sans-serif",
+        padding: "4px 7px",
+        pointerEvents: "none",
+      });
+      document.body.append(el);
+      return el;
+    });
+    await page.screenshot({
+      path: "../docs/evidence-gate6_4/" + name + ".png",
+      fullPage: true,
+    });
+    await marker.evaluate((el) => el.remove());
+  }
+  await capture("inicio");
+  await nav(page, "Estado");
+  await expect(
+    page.getByText("Sensor de humedad", { exact: true }).first(),
+  ).toBeVisible();
+  await capture("estado");
+  await nav(page, "Control");
+  await expect(page.getByRole("button", { name: "Adelante" })).toBeDisabled();
+  await capture("control");
+  await nav(page, "Datos");
+  const select = page.getByLabel("Lugar para consultar");
+  const option = select
+    .getByRole("option")
+    .filter({ hasText: "Sombra del cafeto" })
+    .first();
+  await select.selectOption((await option.getAttribute("value")) || "");
+  await page
+    .getByRole("button", { name: /Asociar a .*Sombra del cafeto/ })
+    .first()
+    .click();
+  await expect(
+    page.getByRole("status").filter({ hasText: "Lectura asociada" }),
+  ).toBeVisible();
+  const history = page
+    .locator(".card")
+    .filter({
+      has: page.getByRole("heading", {
+        name: "Historial del sensor de humedad",
+      }),
+    });
+  await expect(history).toContainText("Sombra del cafeto");
+  await capture("datos");
   expect(
     (await (await page.request.get("/api/npk/samples/")).json()).data,
   ).toEqual([]);

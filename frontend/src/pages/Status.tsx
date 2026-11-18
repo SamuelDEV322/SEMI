@@ -1,8 +1,10 @@
+import { soilMessage } from "../components/SoilReadings";
+import { mechanism } from "../services/manual";
 import { deviceMessage, lidarMessage } from "../services/sourceStatus";
 import { useScanFreshness } from "../hooks/useScanFreshness";
 import { DeviceReadings } from "../components/DeviceReadings";
 import { useRuntime } from "../Runtime";
-import { AlertTriangle, Info, Check, Radio } from "lucide-react";
+import { Check } from "lucide-react";
 import type { RobotStatus, Scan } from "../types/api";
 import { Card } from "../components/ui";
 export function Status({
@@ -15,47 +17,18 @@ export function Status({
   const runtime = useRuntime();
   const demo = runtime.mode === "demonstration";
   const expired = useScanFreshness(scan);
-  const soil = robot?.telemetry.device_reading?.sensors.soil_moisture_adc;
-  const soilStatus =
-    !soil || soil.status === "unavailable"
-      ? "Sin lecturas recibidas del sensor de suelo"
-      : soil.status !== "valid"
-        ? "No se pudo obtener una lectura válida"
-        : robot?.telemetry.device_reading?.freshness === "stale"
-          ? "Lectura sin calibrar · desactualizada"
-          : "Lectura recibida · sin calibrar";
   const rows = [
-    [
-      "Locomoción",
-      demo
-        ? "Demostración · movimiento físico no disponible"
-        : robot?.connection === "diagnostic_online"
-          ? "Conexión de diagnóstico · movimiento no disponible"
-          : "Movimiento físico no disponible",
-    ],
-    [
-      "Humedad del suelo",
-      demo ? "Demostración · sensor de suelo no conectado" : soilStatus,
-    ],
-    [
-      "Sensor NPK",
-      demo
-        ? "Demostración · sensor de suelo no conectado"
-        : "Sin lecturas NPK recibidas",
-    ],
-    ["RPLidar A1", lidarMessage(scan, expired)],
-
-    ["Ambiente e inclinación", "No confirmados · no disponibles"],
+    ["Conexión", deviceMessage(robot)],
+    ["Movimiento", demo ? "Demostración" : mechanism(robot?.manual?.traction)],
+    ["Módulo agrícola", demo ? "Demostración" : mechanism(robot?.manual?.rack)],
+    ["Sensor de humedad", demo ? "Demostración" : soilMessage(robot)],
+    ["LiDAR", lidarMessage(scan, expired)],
+    ["Nitrógeno", "Simulado"],
+    ["Potasio", "Simulado"],
   ];
   return (
     <div className="page-stack">
-      <DeviceReadings robot={robot} />
-      <Card title="Estado de componentes">
-        <p className="caption mb-3">
-          {demo
-            ? "Suelo y locomoción en demostración. La percepción indica su propia fuente."
-            : "La disponibilidad se muestra por componente. Un sensor de distancias activo no confirma la conexión del vehículo."}
-        </p>
+      <Card title="Estado del robot">
         <div className="status-list">
           {rows.map(([name, status]) => (
             <div key={name}>
@@ -65,9 +38,10 @@ export function Status({
           ))}
         </div>
       </Card>
+      <DeviceReadings robot={robot} />
       {(runtime.dev_tools || !demo) && (
         <details className="diagnostics">
-          <summary>Diagnóstico técnico</summary>
+          <summary>Detalles del sistema</summary>
           <pre>
             {JSON.stringify(
               {
@@ -84,31 +58,6 @@ export function Status({
           </pre>
         </details>
       )}
-      <Card title="Sensor de distancias">
-        <p>
-          {scan?.source === "real"
-            ? "Fuente configurada: USB"
-            : "Lecturas de prueba"}
-        </p>
-        <p>{lidarMessage(scan, expired)}</p>
-        <p className="caption">
-          Muestra distancias alrededor del sensor. No identifica materiales del
-          suelo.
-        </p>
-      </Card>
-      <Card title="Conexión">
-        <div className="connection-info">
-          <Radio size={22} />
-          <div>
-            <strong>{deviceMessage(robot)}</strong>
-            <p className="caption">
-              {demo
-                ? "Red local · control de demostración · no requiere Internet"
-                : "Red local · no requiere Internet"}
-            </p>
-          </div>
-        </div>
-      </Card>
       <Card title="Mantenimiento preventivo">
         <p className="caption">
           Lista manual; no es un diagnóstico automático.
@@ -130,30 +79,6 @@ export function Status({
         <p className="caption">
           Las marcas son locales a esta vista y no constituyen un historial.
         </p>
-      </Card>
-      <Card title="Alertas y bloqueos">
-        <div className="notice danger">
-          <AlertTriangle size={19} />
-          <span>
-            Movimiento físico no disponible. La revisión técnica está pendiente.
-          </span>
-        </div>
-        {demo && robot?.scenario === "disconnected" && (
-          <div className="notice danger">
-            Pérdida del enlace simulada. No se permiten órdenes de movimiento.
-          </div>
-        )}
-        {robot?.scenario === "stale" && (
-          <div className="notice">Datos actuales marcados como obsoletos.</div>
-        )}
-        <div className="notice">
-          <Info size={18} />
-          <span>
-            {demo
-              ? "La conexión inalámbrica del sensor está pendiente de validar. USB está preparado para diagnóstico con inicio manual."
-              : "El lector del sensor se inicia desde el equipo de conexión. La aplicación no lo activa automáticamente."}
-          </span>
-        </div>
       </Card>
     </div>
   );

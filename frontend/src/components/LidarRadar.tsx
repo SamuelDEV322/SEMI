@@ -22,8 +22,8 @@ export function LidarRadar({ scan }: { scan: Scan | null }) {
               : scan?.source === "replay"
                 ? "REPRODUCCIÓN"
                 : valid
-                  ? "REAL · ESCANEO ACTIVO"
-                  : "REAL · SIN ESCANEO"}
+                  ? "LiDAR conectado · escaneando"
+                  : "LiDAR sin lecturas"}
         </small>
       </div>
       {valid ? (
@@ -111,7 +111,9 @@ export function LidarRadar({ scan }: { scan: Scan | null }) {
         {!scan
           ? "Sin datos"
           : scan.source === "real"
-            ? "Fuente real · Solo lectura USB"
+            ? valid
+              ? "Distancias medidas en tiempo real"
+              : "Entrada USB"
             : "Datos de prueba"}
       </div>
     </div>

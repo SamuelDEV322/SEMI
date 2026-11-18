@@ -81,10 +81,11 @@ export async function request<T>(
     clearTimeout(timer);
   }
 }
-async function post<T>(
+export async function post<T>(
   path: string,
   data: unknown,
   method: "POST" | "PATCH" = "POST",
+  headers: Record<string, string> = {},
 ) {
   if (!csrf)
     csrf = request<{ csrf_token: string }>("health/")
@@ -97,7 +98,7 @@ async function post<T>(
   try {
     return await request<T>(path, {
       method,
-      headers: { "X-CSRFToken": token },
+      headers: { ...headers, "X-CSRFToken": token },
       body: JSON.stringify(data),
     });
   } catch (error) {

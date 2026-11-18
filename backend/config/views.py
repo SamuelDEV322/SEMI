@@ -57,6 +57,9 @@ def limit(request):
 
 @api_view(["GET"])
 def health(request):
+    from apps.devices.manual import bench, configured
+
+    supervised = configured()
     with connection.cursor() as cursor:
         cursor.execute("SELECT 1")
     return Response(
@@ -65,7 +68,9 @@ def health(request):
                 "status": "ok",
                 "database": "sqlite",
                 "csrf_token": get_token(request),
-                "physical_control": False,
+                "physical_control": supervised
+                and any(c["armed"] for c in bench.call("status").values()),
+                "supervised_control": supervised,
                 "device_integration": (
                     settings.SEMI_DEVICE_INTEGRATION
                     if not registry.is_demonstration()
@@ -82,7 +87,8 @@ def health(request):
 
 @api_view(["GET"])
 def robot_status(request):
-    data = robot_for(request).status()
+    robot = robot_for(request)
+    data = robot.status()
     if registry.is_demonstration():
         rack, _ = registry.demo_domains(
             robot_for(request), scope(request).id if scope(request) else None
@@ -93,12 +99,43 @@ def robot_status(request):
     if not registry.is_demonstration():
         from apps.devices.diagnostics import runtime_diagnostics
 
-        data["diagnostics"] = runtime_diagnostics(scope(request))
+        data["diagnostics"] = runtime_diagnostics(
+            robot.plot if hasattr(robot, "plot") else scope(request)
+        )
     data["telemetry"] = (
         MockTelemetryProvider(robot_for(request)).latest()
         if registry.is_demonstration()
         else data.get("telemetry", registry.unconfigured_robot.telemetry())
     )
+    from apps.devices.manual import bench, configured
+
+    if configured():
+        data["manual"] = bench.call("status")
+        data["manual_device"] = settings.SEMI_BENCH_DEVICE
+        rack = data["manual"]["rack"]
+        data["rack"].update(
+            device_id=settings.SEMI_BENCH_DEVICE,
+            available=rack["armed"],
+            physical_authorized=rack["armed"],
+            connection="online" if rack["ready"] else "unavailable",
+            state=(
+                "command_active"
+                if rack["action"] != "stop"
+                else "ready" if rack["ready"] else "unavailable"
+            ),
+            diagnostic=None if rack["ready"] else "Sin confirmación del módulo.",
+        )
+        if (
+            data.get("device")
+            and data["device"]["device_id"] == settings.SEMI_BENCH_DEVICE
+        ):
+            traction = data["manual"]["traction"]["armed"]
+            data["capabilities"]["physical_motion"] = data["manual"]["traction"][
+                "ready"
+            ]
+            data["capabilities"]["manual_control"] = traction
+            data["device"]["authorization"]["motion"] = traction
+            data["device"]["safety"]["motion_authorized"] = traction
     data["events"] = list(
         (
             SystemEvent.objects.all()

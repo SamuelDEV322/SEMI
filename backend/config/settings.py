@@ -32,7 +32,7 @@ if SEMI_MODE == "demonstration" and SEMI_LIDAR_SOURCE == "real":
 SEMI_DEV_TOOLS = (
     DEBUG and SEMI_MODE == "demonstration" and os.getenv("SEMI_DEV_TOOLS", "0") == "1"
 )
-# Physical operational control is deliberately not a supported configuration.
+# Diagnostic ingestion and the optional supervised bench are configured independently.
 SEMI_DEVICE_INTEGRATION = os.getenv("SEMI_DEVICE_INTEGRATION", "disabled")
 if SEMI_DEVICE_INTEGRATION not in {"disabled", "diagnostic"}:
     raise ImproperlyConfigured(
@@ -85,3 +85,9 @@ REST_FRAMEWORK = {
 }
 CSRF_FAILURE_VIEW = "config.errors.csrf_failure"
 SECURE_CONTENT_TYPE_NOSNIFF = True
+
+# Optional supervised bench profile. Secrets are supplied outside the repository.
+SEMI_BENCH_DEVICE = os.getenv("SEMI_BENCH_DEVICE", "")
+SEMI_OPERATOR_KEY = os.getenv("SEMI_OPERATOR_KEY", "")
+SEMI_MOTOR_KEY = os.getenv("SEMI_MOTOR_KEY", "")
+SEMI_BENCH_STORE = str(BASE_DIR / os.getenv("SEMI_BENCH_STORE", "bench-runtime.sqlite3"))

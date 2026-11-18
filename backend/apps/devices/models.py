@@ -63,3 +63,13 @@ class DeviceMessage(models.Model):
                 condition=models.Q(source="real"), name="device_message_real_provenance"
             ),
         ]
+
+
+class ReadingLocation(models.Model):
+    """A human annotation; the original device message remains immutable."""
+
+    reading = models.OneToOneField(
+        DeviceMessage, related_name="location", on_delete=models.PROTECT
+    )
+    point = models.ForeignKey("agriculture.SamplingPoint", on_delete=models.PROTECT)
+    assigned_at = models.DateTimeField(auto_now_add=True)

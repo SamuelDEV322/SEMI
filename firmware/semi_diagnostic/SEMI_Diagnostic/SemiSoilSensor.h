@@ -6,7 +6,7 @@ namespace semi {
 
 class SoilSensor {
  public:
-  static constexpr uint8_t kPin = 35;  // GPIO34 / ADC1, ESP32 clasico.
+  static constexpr uint8_t kPin = 35;  // ADC1, ESP32 clasico.
   static constexpr int kAdcMax = 4095;
 
   void begin() {

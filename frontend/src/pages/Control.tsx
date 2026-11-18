@@ -6,6 +6,9 @@ import {
   Square,
   LogOut,
 } from "lucide-react";
+import { useState } from "react";
+import { manual, mechanism, type Mechanism } from "../services/manual";
+import { deviceMessage } from "../services/sourceStatus";
 import type { Action, RobotStatus, Scan } from "../types/api";
 import { useRackControl } from "../hooks/useRackControl";
 import { useManualControl } from "../hooks/useManualControl";
@@ -29,34 +32,69 @@ export function Control({
 }) {
   const runtime = useRuntime();
   const demo = runtime.mode === "demonstration";
-  const c = useManualControl(robot, online);
-  const rackOnline =
-    demo &&
-    serviceAvailable &&
-    !!robot?.rack?.available &&
-    robot.rack.connection === "simulated_online";
-  const r = useRackControl(robot?.rack, rackOnline);
+  const [key, setKey] = useState("");
+  const [verifiedKey, setVerifiedKey] = useState("");
+  const [armError, setArmError] = useState("");
+  const bench = !demo ? robot?.manual : undefined;
+  const arm = async (domain: Mechanism) => {
+    try {
+      await manual(
+        key,
+        domain,
+        bench?.[domain].armed ? "disarm" : "arm",
+        bench?.[domain],
+      );
+      setVerifiedKey(key);
+      setArmError("");
+    } catch (error) {
+      setArmError(String(error));
+    }
+  };
+  online = demo
+    ? online
+    : !!(
+        serviceAvailable &&
+        key &&
+        key === verifiedKey &&
+        bench?.traction.armed &&
+        bench.traction.ready
+      );
+  const c = useManualControl(robot, online, key);
+  const rackOnline = !demo
+    ? !!(
+        serviceAvailable &&
+        key &&
+        key === verifiedKey &&
+        bench?.rack.armed &&
+        bench.rack.ready
+      )
+    : serviceAvailable &&
+      !!robot?.rack?.available &&
+      robot.rack.connection === "simulated_online";
+  const r = useRackControl(robot?.rack, rackOnline, key, bench?.rack);
   const stopAll = async () => {
     r.cancel();
     await c.stopAll();
   };
-  const rackState = !rackOnline
-    ? robot?.rack?.state === "error"
-      ? "Error del módulo"
-      : demo
-        ? "No disponible"
-        : "No habilitado"
-    : r.pendingStop
-      ? "Parada solicitada…"
-      : r.technicalError
-        ? "Sin confirmación"
-        : robot?.rack?.state === "raising_simulated"
-          ? "Subiendo (simulado)"
-          : robot?.rack?.state === "lowering_simulated"
-            ? "Bajando (simulado)"
-            : r.action !== "stop"
-              ? "Solicitud en curso…"
-              : "Detenido (simulado)";
+  const rackState = !demo
+    ? mechanism(bench?.rack)
+    : !rackOnline
+      ? robot?.rack?.state === "error"
+        ? "Error del módulo"
+        : demo
+          ? "No disponible"
+          : "No habilitado"
+      : r.pendingStop
+        ? "Parada solicitada…"
+        : r.technicalError
+          ? "Sin confirmación"
+          : robot?.rack?.state === "raising_simulated"
+            ? "Subiendo (simulado)"
+            : robot?.rack?.state === "lowering_simulated"
+              ? "Bajando (simulado)"
+              : r.action !== "stop"
+                ? "Solicitud en curso…"
+                : "Detenido (simulado)";
   const directions: {
     action: Exclude<Action, "stop">;
     label: string;
@@ -68,11 +106,13 @@ export function Control({
     { action: "backward", label: "Atrás", icon: ArrowDown },
   ];
   const leave = async () => {
-    if (demo) await stopAll();
+    if (demo || (bench && key)) await stopAll();
     onExit();
   };
   const confirmed = !demo
-    ? "Tracción física no habilitada"
+    ? bench?.traction.ready
+      ? mechanism(bench.traction)
+      : "Movimiento no disponible"
     : robot?.surface_trial?.blocked
       ? "Ensayo: STOP simulado"
       : robot?.control.action === "stop"
@@ -93,19 +133,21 @@ export function Control({
         </button>
         <strong>SEMI</strong>
         <span
-          className={`drive-connection ${online || robot?.connection === "diagnostic_online" ? "" : "offline"}`}
+          className={`drive-connection ${online || bench?.traction.ready || bench?.rack.ready || robot?.connection === "diagnostic_online" ? "" : "offline"}`}
         >
-          {robot?.connection === "diagnostic_online"
-            ? "● Diagnóstico"
-            : online
-              ? "● Conectado · demo"
-              : "○ Sin conexión"}
+          {demo ? (online ? "● Conectado · demo" : "○ Sin conexión") : deviceMessage(robot)}
         </span>
         <ThemeSelector />
       </header>
       <div className="drive-status" role="status">
         {c.pendingStop ? "Parada solicitada…" : confirmed}
-        <span>{demo ? "SOLO DEMOSTRACIÓN" : "CONTROL NO DISPONIBLE"}</span>
+        <span>
+          {demo
+            ? "SOLO DEMOSTRACIÓN"
+            : online || rackOnline
+              ? "Control manual"
+              : "Controles desactivados"}
+        </span>
       </div>
       <div className="drive-content">
         <div className="drive-perception">
@@ -122,14 +164,18 @@ export function Control({
           </p>
           <div className="dpad">
             <span className="dpad-center" aria-live="polite">
-              {c.action === "stop" ? "SIN MANDO" : "MANDO ACTIVO"}
+              {c.action === "stop" ? "Sin orden" : "Orden activa"}
             </span>
             {directions.map(({ action, label, icon: Icon }) => (
               <button
                 key={action}
                 aria-label={label}
                 aria-pressed={c.action === action}
-                disabled={!online || c.pendingStop}
+                disabled={
+                  !online ||
+                  c.pendingStop ||
+                  (demo && robot?.surface_trial?.blocked)
+                }
                 className={`direction ${action} ${c.action === action ? "pressed" : ""}`}
                 {...c.bind(action)}
               >
@@ -143,7 +189,7 @@ export function Control({
               <strong>Módulo agrícola</strong>
               <span role="status">{rackState}</span>
             </div>
-            <div className="rack-buttons">
+            <div className={bench ? "rack-buttons supervised" : "rack-buttons"}>
               <button
                 className={`button ${r.action === "up" ? "pressed" : ""}`}
                 disabled={!rackOnline || r.pendingStop || c.pendingStop}
@@ -160,6 +206,15 @@ export function Control({
               >
                 <ArrowDown size={18} /> Bajar
               </button>
+              {bench && (
+                <button
+                  className="button"
+                  disabled={!serviceAvailable || !key}
+                  onClick={() => void r.stop()}
+                >
+                  Detener módulo
+                </button>
+              )}
             </div>
           </section>
           <div className="speed-row">
@@ -183,7 +238,7 @@ export function Control({
           </div>
           <button
             className="button stop-button wide"
-            disabled={!demo || !serviceAvailable}
+            disabled={!serviceAvailable || (!demo && !(bench && key))}
             onPointerDown={(event) => {
               if (event.button !== 0) return;
               event.preventDefault();
@@ -197,17 +252,63 @@ export function Control({
             {c.pendingStop ? "SOLICITANDO PARADA…" : "DETENER ROBOT"}
           </button>
           <p className="drive-feedback" role="status">
-            {c.message}
+            {armError || r.technicalError || c.technicalError || c.message}
           </p>
         </div>
       </div>
       <footer className="drive-footer">
         {demo
           ? "Sin movimiento físico · Parada web, no emergencia física."
-          : "El control físico todavía no está habilitado."}
-        {runtime.dev_tools && (
+          : bench
+            ? "Ensayo supervisado · parada física al alcance."
+            : "Mando desactivado. Revisa la configuración del banco."}
+        {bench && (
           <details className="drive-diagnostics">
-            <summary>Diagnóstico</summary>
+            <summary>Habilitar control supervisado</summary>
+            {!window.isSecureContext && (
+              <p role="alert">
+                Abre Control en localhost o por HTTPS para habilitar el mando.
+              </p>
+            )}
+            <label>
+              Clave del operador{" "}
+              <input
+                type="password"
+                autoComplete="off"
+                value={key}
+                onChange={(e) => setKey(e.target.value)}
+              />
+            </label>
+            <p>
+              Equipo {robot?.manual_device}. Habilita solo el mecanismo revisado
+              y con el área despejada.
+            </p>
+            {(["traction", "rack"] as const).map((domain) => (
+              <button
+                key={domain}
+                className="button"
+                disabled={
+                  !window.isSecureContext ||
+                  !key ||
+                  !serviceAvailable ||
+                  !bench[domain].ready
+                }
+                onClick={() => void arm(domain)}
+              >
+                {bench[domain].armed
+                  ? domain === "traction"
+                    ? "Desactivar tracción"
+                    : "Desactivar módulo"
+                  : domain === "traction"
+                    ? "Habilitar tracción"
+                    : "Habilitar recorrido limitado"}
+              </button>
+            ))}
+          </details>
+        )}
+        {(runtime.dev_tools || !demo) && (
+          <details className="drive-diagnostics">
+            <summary>Detalles del sistema</summary>
             <pre>
               {JSON.stringify(
                 {
@@ -228,7 +329,7 @@ export function Control({
                     freshness: scan?.freshness,
                     error: scanError || scan?.error,
                   },
-                  hardwareActed: false,
+                  manual: bench,
                 },
                 null,
                 2,

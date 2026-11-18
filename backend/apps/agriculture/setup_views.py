@@ -53,6 +53,17 @@ def robot_for(request):
         if settings.SEMI_DEVICE_INTEGRATION == "diagnostic":
             from adapters.esp32_diagnostic import Esp32DiagnosticProvider
 
+            from apps.devices.manual import configured
+
+            if configured():
+                from apps.devices.models import Device
+
+                device = (
+                    Device.objects.select_related("plot")
+                    .filter(device_id=settings.SEMI_BENCH_DEVICE, enabled=True)
+                    .first()
+                )
+                return Esp32DiagnosticProvider(device.plot if device else None)
             return Esp32DiagnosticProvider(scope(request))
         return registry.unconfigured_robot
     p = scope(request)

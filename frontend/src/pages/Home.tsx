@@ -1,3 +1,4 @@
+import { SoilReadings } from "../components/SoilReadings";
 import { deviceMessage } from "../services/sourceStatus";
 import { ArrowRight, Activity } from "lucide-react";
 import type { RobotStatus, Sample } from "../types/api";
@@ -34,35 +35,45 @@ export function Home({
           <h2>Mediciones principales</h2>
           <span>{demo ? "DATOS DE PRUEBA" : "LECTURAS DEL SUELO"}</span>
         </div>
-        <div className="reading-grid three">
-          <Reading
-            label="Humedad del suelo"
-            value={latest?.status === "valid" ? latest.soil_moisture : null}
-            unit="%"
-            stale={latest?.freshness === "stale"}
-            note={
-              latest?.source === "real" ? "Lectura del sensor" : "Demostración"
-            }
-          />
-          <Reading
-            label="Nitrógeno"
-            value={latest?.status === "valid" ? latest.nitrogen : null}
-            unit={latest?.npk_unit || ""}
-            stale={latest?.freshness === "stale"}
-            note={
-              latest?.source === "real" ? "Lectura del sensor" : "Demostración"
-            }
-          />
-          <Reading
-            label="Potasio"
-            value={latest?.status === "valid" ? latest.potassium : null}
-            unit={latest?.npk_unit || ""}
-            stale={latest?.freshness === "stale"}
-            note={
-              latest?.source === "real" ? "Lectura del sensor" : "Demostración"
-            }
-          />
-        </div>
+        {!demo ? (
+          <SoilReadings robot={robot} />
+        ) : (
+          <div className="reading-grid three">
+            <Reading
+              label="Humedad del suelo"
+              value={latest?.status === "valid" ? latest.soil_moisture : null}
+              unit="%"
+              stale={latest?.freshness === "stale"}
+              note={
+                latest?.source === "real"
+                  ? "Lectura del sensor"
+                  : "Demostración"
+              }
+            />
+            <Reading
+              label="Nitrógeno"
+              value={latest?.status === "valid" ? latest.nitrogen : null}
+              unit={latest?.npk_unit || ""}
+              stale={latest?.freshness === "stale"}
+              note={
+                latest?.source === "real"
+                  ? "Lectura del sensor"
+                  : "Demostración"
+              }
+            />
+            <Reading
+              label="Potasio"
+              value={latest?.status === "valid" ? latest.potassium : null}
+              unit={latest?.npk_unit || ""}
+              stale={latest?.freshness === "stale"}
+              note={
+                latest?.source === "real"
+                  ? "Lectura del sensor"
+                  : "Demostración"
+              }
+            />
+          </div>
+        )}
       </section>
       <button
         className="button primary wide"
@@ -108,7 +119,7 @@ export function Home({
       <p className="footnote">
         {demo
           ? "SEMI acompaña tus decisiones. Control y suelo en demostración. Consulta la fuente del sensor de distancias en Estado."
-          : "SEMI acompaña tus decisiones. Conecta los sensores para consultar lecturas de tu cafetal."}
+          : "Las lecturas del sensor se guardan en Datos, donde puedes elegir su lugar de muestreo."}
       </p>
     </div>
   );

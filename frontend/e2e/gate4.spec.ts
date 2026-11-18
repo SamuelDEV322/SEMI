@@ -268,6 +268,7 @@ for (const theme of ["light", "dark"])
     await inject("soil");
     await nav(page, "Control");
     const forward = page.getByRole("button", { name: "Adelante", exact: true });
+    await expect(forward).toBeEnabled();
     await forward.hover();
     await page.mouse.down();
     await expect
@@ -276,9 +277,11 @@ for (const theme of ["light", "dark"])
     await inject("sand");
     await expect.poll(async () => (await status()).control.action).toBe("stop");
     await expect(forward).toHaveAttribute("aria-pressed", "false");
+    await expect(forward).toBeDisabled();
     await page.mouse.up();
     await inject("soil");
     expect((await status()).control.action).toBe("stop");
+    await expect(forward).toBeEnabled();
     await forward.hover();
     await page.mouse.down();
     await expect

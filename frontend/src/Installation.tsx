@@ -47,6 +47,21 @@ function InstallationFlow() {
     [paused, setPaused] = useState(false),
     [name, setName] = useState("Mi cafetal"),
     [selected, setSelected] = useState<number>();
+  const [plots, setPlots] = useState<{ id: number; name: string }[]>([]);
+  useEffect(() => {
+    if (runtime.mode !== "operational") return;
+    let active = true;
+    request<{ id: number; name: string }[]>("setup/plots/")
+      .then((rows) => {
+        if (active) setPlots(rows);
+      })
+      .catch(() => {
+        if (active) setPlots([]);
+      });
+    return () => {
+      active = false;
+    };
+  }, [runtime.mode, plot?.id, plot?.name]);
   const apply = (p: SetupPlot) => {
     localStorage.setItem("semi-plot", String(p.id));
     setPlot(p);
@@ -111,7 +126,7 @@ function InstallationFlow() {
   };
   const diagnostics = runtime.dev_tools && technical && (
     <details className="diagnostics">
-      <summary>Diagnóstico técnico</summary>
+      <summary>Detalles del sistema</summary>
       <pre>{technical}</pre>
     </details>
   );
@@ -222,14 +237,16 @@ function InstallationFlow() {
               <Connection robot={robot.data} error={robot.error} />
               <p>
                 Disponibilidad:{" "}
-                {plot.points.some((p) => p.latest_sample)
-                  ? "Ya hay mediciones guardadas."
-                  : "Todavía no hay mediciones guardadas."}
+                {!demo
+                  ? "Las lecturas ADC se consultan en Datos."
+                  : plot.points.some((p) => p.latest_sample)
+                    ? "Ya hay mediciones guardadas."
+                    : "Todavía no hay mediciones guardadas."}
               </p>
               <p>
                 {demo
                   ? "Los estados del vehículo y del suelo son simulados. No confirman hardware conectado."
-                  : "Puedes preparar tu cafetal ahora. Las mediciones estarán disponibles cuando se conecte el sensor de suelo."}
+                  : "El nombre del cafetal y sus puntos dan contexto a las lecturas que envía el ESP32."}
               </p>
             </section>
             <details className="guided-reading" open>
@@ -237,7 +254,7 @@ function InstallationFlow() {
               <p>
                 {demo
                   ? "Con SEMI detenido, se colocaría la sonda siguiendo el procedimiento validado del equipo. Aquí guardaremos solo datos simulados."
-                  : "Para medir necesitarás el vehículo detenido y el sensor de suelo conectado. Puedes omitir este paso y continuar."}
+                  : "El ESP32 envía las lecturas del sensor. Puedes elegir su punto de muestreo después, en Datos."}
               </p>
               {point ? (
                 <>
@@ -271,7 +288,7 @@ function InstallationFlow() {
                   {!runtime.npk_capture && (
                     <p>
                       {runtime.device_integration === "diagnostic"
-                        ? "Las muestras de suelo todavía no están disponibles. La lectura sin calibrar se consulta en Estado."
+                        ? "Consulta el ADC en Estado. En Datos puedes asociar cada lectura a un punto de este cafetal."
                         : "Sensor de suelo no conectado. No se ha tomado ninguna medición."}
                     </p>
                   )}
@@ -358,7 +375,27 @@ function InstallationFlow() {
   return (
     <>
       <div className="installation-tools">
-        <strong>{plot?.name || "Mi cafetal"}</strong>
+        {plots.length > 0 ? (
+          <label>
+            Cafetal{" "}
+            <select
+              aria-label="Cafetal activo"
+              value={plot?.id || ""}
+              onChange={(e) => {
+                localStorage.setItem("semi-plot", e.target.value);
+                void load();
+              }}
+            >
+              {plots.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name}
+                </option>
+              ))}
+            </select>
+          </label>
+        ) : (
+          <strong>{plot?.name || "Mi cafetal"}</strong>
+        )}
         <button className="button" onClick={edit}>
           {plot && !plot.completed
             ? "Continuar configuración"
@@ -402,7 +439,13 @@ function InstallationFlow() {
         <ErrorNotice message={error} />
         {diagnostics}
       </div>
-      <Dashboard plot={plot} act={act} setupBusy={busy} onConfigure={edit} />
+      <Dashboard
+        key={plot?.id ?? 0}
+        plot={plot}
+        act={act}
+        setupBusy={busy}
+        onConfigure={edit}
+      />
     </>
   );
 }

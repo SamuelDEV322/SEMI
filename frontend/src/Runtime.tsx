@@ -6,7 +6,7 @@ export interface RuntimeProfile {
   device_integration?: "disabled" | "diagnostic";
   lidar_source: Source;
   npk_capture: boolean;
-  physical_control: false;
+  physical_control: boolean;
 }
 export const RuntimeContext = createContext<RuntimeProfile>({
   mode: "operational",

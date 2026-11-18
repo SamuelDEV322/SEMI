@@ -5,22 +5,24 @@
 // ==========================================
 //
 // Integración:
-// - Sensor capacitivo GPIO34
+// - Sensor capacitivo ADC1
 // - Comunicación Wi-Fi
 // - API Django Gate 5
 // - Persistencia de secuencias
 // - Telemetría y heartbeat
 //
-// SEGURIDAD:
-// NO habilita motores, PWM, STBY,
-// tracción ni cremallera.
-// ==========================================
+// El perfil por defecto conserva el diagnóstico. El banco supervisado requiere
+// claves y habilitación independiente por mecanismo en la configuración local.
 
 #include <Arduino.h>
 
 #include "semi_config.h"
 #include "SemiApiBridge.h"
+#ifdef SEMI_MOTOR_KEY
+#include "SemiBench.h"
+#else
 #include "SemiMotorAdapter.h"
+#endif
 #include "SemiSoilSensor.h"
 
 
@@ -32,16 +34,18 @@ semi::SequenceStore sequenceStore;
 
 semi::SoilSensor soilSensor;
 
-semi::MotorAdapter motorAdapter;
+
 
 semi::ApiBridge backend;
 
 
 // Bloqueo de movimiento físico
+#ifndef SEMI_MOTOR_KEY
 static_assert(
     !semi::MotorAdapter::physicalMotionImplemented,
     "Gate 6 no permite control fisico de motores."
 );
+#endif
 
 
 // ==========================================
@@ -63,6 +67,9 @@ semi::LinkState lastPrintedState =
 // ==========================================
 
 void setup() {
+#ifdef SEMI_MOTOR_KEY
+  semi::bench::beginSafe();
+#endif
 
   // Inicialización del puerto serie
   Serial.begin(115200);
@@ -80,7 +87,7 @@ void setup() {
   );
 
   Serial.println(
-      "[SEMI] Motores y actuadores bloqueados."
+      "[SEMI] Inicio con motores desactivados."
   );
 
 
@@ -120,9 +127,7 @@ void setup() {
 
   soilSensor.begin();
 
-  Serial.println(
-      "[SEMI] Sensor GPIO34 inicializado."
-  );
+  Serial.printf("[SEMI] Sensor configurado en GPIO%u.\n", semi::SoilSensor::kPin);
 
 
   // ========================================
@@ -193,6 +198,9 @@ void setup() {
   // ========================================
 
   diagnosticReady = true;
+#ifdef SEMI_MOTOR_KEY
+  semi::bench::start();
+#endif
 
   Serial.println();
   Serial.println("==================================");
@@ -213,27 +221,7 @@ void setup() {
   Serial.println();
 
 
-  // ========================================
-  // RESTRICCIONES DE SEGURIDAD
-  // ========================================
 
-  // NO llamar:
-  //
-  // configurarTB6612()
-  // configurarCremallera()
-  // avanzar()
-  // retroceder()
-  // girarDerecha()
-  // girarIzquierda()
-  //
-  // NO configurar:
-  //
-  // PWM
-  // STBY
-  // GPIO de motores
-  //
-  // Este firmware es exclusivamente
-  // de adquisicion y diagnostico.
 }
 
 
@@ -284,7 +272,7 @@ void loop() {
     lastAdcMs = now;
 
     Serial.print(
-        "[SEMI] ADC sin calibrar GPIO34: "
+        "[SEMI] ADC sin calibrar ADC1: "
     );
 
     Serial.print(lastAdcRaw);

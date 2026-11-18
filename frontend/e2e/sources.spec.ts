@@ -112,7 +112,7 @@ for (const width of [360, 390, 768, 1440])
       selected = "active";
       await page.reload();
       await expect(
-        page.getByText("REAL · ESCANEO ACTIVO", { exact: true }),
+        page.getByText("LiDAR conectado · escaneando", { exact: true }),
       ).toBeVisible();
       await expect(page.locator(".radar-distances circle")).toHaveCount(1);
       await expect(

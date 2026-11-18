@@ -24,7 +24,7 @@ test("missing stale and error measurements remain explicit", async ({
 test("LiDAR source cannot be changed from the browser", async ({ page }) => {
   await reset(page);
   await nav(page, "Estado");
-  await page.getByText("Diagnóstico técnico", { exact: true }).click();
+  await page.getByText("Detalles del sistema", { exact: true }).click();
   await expect(page.getByLabel("Origen LiDAR")).toHaveCount(0);
   const token = (await (await page.request.get("/api/health/")).json()).data
     .csrf_token;

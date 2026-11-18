@@ -5,11 +5,13 @@ import { createSessionId } from "../services/session";
 export interface ActuatorLease {
   epoch: number;
   window_id: string;
+  ticket?: string;
 }
 
 /** Browser intentions only. No physical output or confirmation is provided. */
 export function useHeldActuator<A extends string>(options: {
   demo: boolean;
+  physical?: boolean;
   enabled: boolean;
   blocked?: boolean;
   lease: ActuatorLease | null;
@@ -31,6 +33,7 @@ export function useHeldActuator<A extends string>(options: {
     lease.current = {
       epoch: options.lease.epoch,
       window_id: options.lease.window_id,
+      ticket: options.lease.ticket,
     };
   const session = useRef(createSessionId()),
     sequence = useRef(0),
@@ -45,7 +48,7 @@ export function useHeldActuator<A extends string>(options: {
   const [message, setMessage] = useState(
     options.demo
       ? "Mantén pulsado para mover. Suelta para detener."
-      : "Movimiento físico no disponible durante las pruebas.",
+      : "Mantén pulsado solo mientras observas el robot.",
   );
   const cancel = useCallback(() => {
     generation.current++;
@@ -58,12 +61,16 @@ export function useHeldActuator<A extends string>(options: {
   }, []);
   const updateLease = (value: ActuatorLease) => {
     if (!lease.current || value.epoch >= lease.current.epoch)
-      lease.current = { epoch: value.epoch, window_id: value.window_id };
+      lease.current = {
+        epoch: value.epoch,
+        window_id: value.window_id,
+        ticket: value.ticket,
+      };
   };
   const stop = useCallback(
     async (all = false) => {
       cancel();
-      if (!config.current.demo) return;
+      if (!config.current.demo && !config.current.physical) return;
       const current = generation.current;
       stopping.current = true;
       setPendingStop(true);
@@ -79,14 +86,16 @@ export function useHeldActuator<A extends string>(options: {
         if (generation.current === current) {
           setTechnicalError(null);
           setMessage(
-            "Parada confirmada por el simulador. Sin actuación física.",
+            config.current.physical
+              ? "Parada solicitada al robot."
+              : "Parada confirmada por el simulador. Sin actuación física.",
           );
         }
       } catch (error) {
         if (generation.current === current) {
           setTechnicalError(String(error));
           setMessage(
-            "Parada sin confirmación. Comprueba la conexión. El mando simulado caduca.",
+            "Parada sin confirmación. Comprueba la conexión. El mando caduca.",
           );
         }
       } finally {
@@ -108,8 +117,12 @@ export function useHeldActuator<A extends string>(options: {
   const start = useCallback(
     (next: A, input: number | "keyboard" = "keyboard") => {
       const c = config.current;
+      if (c.physical && held.current && held.current.action !== next) {
+        void stop();
+        return false;
+      }
       if (
-        !c.demo ||
+        (!c.demo && !c.physical) ||
         !c.enabled ||
         c.blocked ||
         held.current ||
@@ -118,6 +131,7 @@ export function useHeldActuator<A extends string>(options: {
       )
         return false;
       const current = ++generation.current;
+      const startingWindow = lease.current.window_id;
       held.current = { action: next, input };
       setAction(next);
       const send = async () => {
@@ -128,6 +142,10 @@ export function useHeldActuator<A extends string>(options: {
           !lease.current
         )
           return;
+        if (c.physical && startingWindow !== lease.current.window_id) {
+          void stop();
+          return;
+        }
         busy.current = true;
         try {
           const result = await config.current.send(
@@ -141,7 +159,9 @@ export function useHeldActuator<A extends string>(options: {
             updateLease(result);
             setTechnicalError(null);
             setMessage(
-              "Solicitud aceptada por el simulador. Sin actuación física.",
+              c.physical
+                ? "Orden recibida por el sistema."
+                : "Solicitud aceptada por el simulador. Sin actuación física.",
             );
           }
         } catch (error) {

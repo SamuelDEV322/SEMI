@@ -1,10 +1,10 @@
 # SEMI — Sistema Eficiente de Monitoreo Inteligente
 
-Plataforma local en desarrollo para monitorear suelo de cafetales de **Coffea arabica L.** y preparar la teleoperación manual supervisada de un vehículo de orugas. La base del MVP corresponde al **Gate 4**, con un perfil operativo que prepara la adquisición real sin controles de ensayo en la interfaz del agricultor.
+SEMI permite controlar manualmente el robot agrícola, observar distancias del RPLidar A1M8 por USB y consultar lecturas ADC del ESP32 en el contexto del cafetal. En el perfil operativo, únicamente las tarjetas de nitrógeno y potasio generan valores de ejemplo identificados como «Simulado».
 
-**Las mediciones de demostración son sintéticas. Los motores físicos no están habilitados.** No hay navegación autónoma, SLAM, georreferenciación ni clasificación física de tierra/arena validada.
+**Gate 6.4.** El mando de tracción y cremallera arranca desarmado. Cada mecanismo requiere revisión de banco, configuración local y habilitación del operador. Los ensayos de recorrido y frenado con los motores del equipo están pendientes. La guía incluye las condiciones eléctricas, configuración, evidencias de software y planilla para los resultados físicos. [Informe de sustentación](docs/gates/GATE6_4_SUSTENTACION_FINAL.md)
 
-## Alcance actual
+## Base de los gates anteriores
 
 - Inicio, Control, Datos y Estado, con interfaz responsive y temas claro, oscuro y sistema.
 - Configuración inicial en cuatro etapas, reanudable: bienvenida, cafetal, lugares para medir y revisión/primera medición opcional.

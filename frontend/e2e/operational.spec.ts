@@ -101,10 +101,10 @@ for (const width of [360, 390, 768, 1440])
         ).toBeTruthy();
         if (screen === "Control") {
           await expect(page.locator(".drive-status")).toContainText(
-            "Tracción física no habilitada",
+            "Movimiento no disponible",
           );
           await expect(
-            page.getByText("REAL · SIN ESCANEO", { exact: true }),
+            page.getByText("LiDAR sin lecturas", { exact: true }),
           ).toBeVisible();
           for (const name of [
             "Adelante",
