@@ -83,6 +83,10 @@ def health(request):
 @api_view(["GET"])
 def robot_status(request):
     data = robot_for(request).status()
+    if not registry.is_demonstration():
+        from apps.devices.diagnostics import runtime_diagnostics
+
+        data["diagnostics"] = runtime_diagnostics(scope(request))
     data["telemetry"] = (
         MockTelemetryProvider(robot_for(request)).latest()
         if registry.is_demonstration()

@@ -12,7 +12,7 @@ export function useManualControl(robot: RobotStatus | null, online: boolean) {
     [message, setMessage] = useState(
       demo
         ? "Control de demostración. Mantén un botón para mover."
-        : "Movimiento no disponible. El vehículo no está conectado.",
+        : "Movimiento físico no disponible durante las pruebas.",
     ),
     [pendingStop, setPendingStop] = useState(false),
     [technicalError, setTechnicalError] = useState<string | null>(null);

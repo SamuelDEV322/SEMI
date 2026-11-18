@@ -60,6 +60,15 @@ export interface DeviceReading {
   };
 }
 export interface RobotStatus {
+  diagnostics?: {
+    integration: "disabled" | "diagnostic";
+    registered: boolean;
+    credential_configured: boolean;
+    authentication: string;
+    reason: string;
+    status_age_ms: number | null;
+    telemetry_age_ms: number | null;
+  };
   device?: {
     device_id: string;
     firmware: string | null;
@@ -116,6 +125,26 @@ export interface RobotStatus {
   }[];
 }
 export interface Scan {
+  acquisition?: {
+    state:
+      | "not_detected"
+      | "usb_unidentified"
+      | "usb_detected"
+      | "waiting"
+      | "active"
+      | "interrupted"
+      | "stale"
+      | "error"
+      | "unknown";
+    selected_port: string | null;
+    usb_detected: boolean | null;
+    sensor_identified: boolean | null;
+    reader_running: boolean | null;
+    reader_age_ms: number | null;
+    inventory_status: string;
+    ports: { port: string; description: string; usb: boolean }[];
+    reader_start_authorized: boolean;
+  };
   sensor_id: string;
   captured_at: string | null;
   status:

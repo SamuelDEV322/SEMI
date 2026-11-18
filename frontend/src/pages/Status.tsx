@@ -1,8 +1,10 @@
+import { deviceMessage, lidarMessage } from "../services/sourceStatus";
+import { useScanFreshness } from "../hooks/useScanFreshness";
 import { DeviceReadings } from "../components/DeviceReadings";
 import { useRuntime } from "../Runtime";
 import { AlertTriangle, Info, Check, Radio } from "lucide-react";
 import type { RobotStatus, Scan } from "../types/api";
-import { Card, Reading } from "../components/ui";
+import { Card } from "../components/ui";
 export function Status({
   robot,
   scan,
@@ -12,10 +14,11 @@ export function Status({
 }) {
   const runtime = useRuntime();
   const demo = runtime.mode === "demonstration";
+  const expired = useScanFreshness(scan);
   const soil = robot?.telemetry.device_reading?.sensors.soil_moisture_adc;
   const soilStatus =
     !soil || soil.status === "unavailable"
-      ? "Sensor de suelo no disponible"
+      ? "Sin lecturas recibidas del sensor de suelo"
       : soil.status !== "valid"
         ? "No se pudo obtener una lectura válida"
         : robot?.telemetry.device_reading?.freshness === "stale"
@@ -28,48 +31,25 @@ export function Status({
         ? "Demostración · movimiento físico no disponible"
         : robot?.connection === "diagnostic_online"
           ? "Conexión de diagnóstico · movimiento no disponible"
-          : "Vehículo no conectado · control no disponible",
+          : "Movimiento físico no disponible",
     ],
     [
       "Humedad del suelo",
-      demo
-        ? "Demostración · sensor de suelo no conectado"
-        : soil
-          ? soilStatus
-          : "Sensor de suelo no conectado",
+      demo ? "Demostración · sensor de suelo no conectado" : soilStatus,
     ],
     [
       "Sensor NPK",
       demo
         ? "Demostración · sensor de suelo no conectado"
-        : "Sensor de suelo no conectado",
+        : "Sin lecturas NPK recibidas",
     ],
-    [
-      "RPLidar A1",
-      scan?.valid
-        ? "Escaneo disponible · consulta la fuente"
-        : "Sin escaneo actual",
-    ],
-    ["Cámara", "No confirmada · no disponible"],
+    ["RPLidar A1", lidarMessage(scan, expired)],
+
     ["Ambiente e inclinación", "No confirmados · no disponibles"],
   ];
   return (
     <div className="page-stack">
       <DeviceReadings robot={robot} />
-      <Card title="Energía y batería">
-        <Reading
-          label="Carga estimada"
-          value={robot?.telemetry.battery.value}
-          unit="%"
-          stale={robot?.telemetry.battery.freshness === "stale"}
-          note={demo ? "Demostración" : "Lectura del sensor"}
-        />
-        <p className="caption">
-          {demo
-            ? "Carga simulada. La batería física todavía no se supervisa."
-            : "Todavía no se recibe una medición de la batería."}
-        </p>
-      </Card>
       <Card title="Estado de componentes">
         <p className="caption mb-3">
           {demo
@@ -85,7 +65,7 @@ export function Status({
           ))}
         </div>
       </Card>
-      {runtime.dev_tools && (
+      {(runtime.dev_tools || !demo) && (
         <details className="diagnostics">
           <summary>Diagnóstico técnico</summary>
           <pre>
@@ -95,6 +75,8 @@ export function Status({
                 status: scan?.status,
                 age_ms: scan?.age_ms,
                 error: scan?.error,
+                acquisition: scan?.acquisition,
+                vehicle: robot?.diagnostics,
               },
               null,
               2,
@@ -105,20 +87,10 @@ export function Status({
       <Card title="Sensor de distancias">
         <p>
           {scan?.source === "real"
-            ? "RPLidar A1 · lectura USB"
+            ? "Fuente configurada: USB"
             : "Lecturas de prueba"}
         </p>
-        <p>
-          {scan?.status === "stale"
-            ? "Última lectura desactualizada"
-            : scan?.status === "error"
-              ? "No pudimos obtener las distancias"
-              : scan?.valid
-                ? "Lecturas disponibles"
-                : scan?.status === "no_data"
-                  ? "Sensor sin lecturas"
-                  : "Sensor no conectado"}
-        </p>
+        <p>{lidarMessage(scan, expired)}</p>
         <p className="caption">
           Muestra distancias alrededor del sensor. No identifica materiales del
           suelo.
@@ -128,13 +100,7 @@ export function Status({
         <div className="connection-info">
           <Radio size={22} />
           <div>
-            <strong>
-              {robot?.connection === "simulated_online"
-                ? "Enlace simulado activo"
-                : robot?.connection === "diagnostic_online"
-                  ? "Conexión establecida · diagnóstico"
-                  : "Enlace no disponible"}
-            </strong>
+            <strong>{deviceMessage(robot)}</strong>
             <p className="caption">
               {demo
                 ? "Red local · control de demostración · no requiere Internet"

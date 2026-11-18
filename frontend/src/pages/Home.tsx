@@ -1,4 +1,5 @@
-import { ArrowRight, BatteryMedium, Activity } from "lucide-react";
+import { deviceMessage } from "../services/sourceStatus";
+import { ArrowRight, Activity } from "lucide-react";
 import type { RobotStatus, Sample } from "../types/api";
 import { Card, Reading, Empty, dateTime } from "../components/ui";
 import { useRuntime } from "../Runtime";
@@ -12,34 +13,21 @@ export function Home({
   onNavigate: (page: string) => void;
 }) {
   const demo = useRuntime().mode === "demonstration";
-  const battery = robot?.telemetry.battery;
   return (
     <div className="page-stack">
       <Card title="Estado del robot" className="robot-summary">
         <div className="summary-status">
           <Activity size={16} />
-          {!robot || robot.state === "unavailable"
-            ? "Estado del vehículo sin confirmar"
-            : robot.state === "diagnostic"
-              ? "Conexión establecida · pruebas sin movimiento"
+          {robot?.source === "real"
+            ? deviceMessage(robot)
+            : !robot
+              ? "Estado del vehículo sin confirmar"
               : robot.state === "moving_simulated"
                 ? "Movimiento simulado"
-                : robot?.state === "fault"
+                : robot.state === "fault"
                   ? "Fallo simulado"
                   : "Detenido · simulación"}
         </div>
-        <div className="battery-summary">
-          <BatteryMedium size={27} />
-          <strong>
-            Batería {battery?.value == null ? "—" : `${battery.value} %`}
-          </strong>
-        </div>
-        <p className="caption">
-          {demo ? "Estimación simulada · " : "Carga no disponible · "}
-          {battery?.freshness === "stale"
-            ? "dato obsoleto"
-            : "sin medición física de batería"}
-        </p>
       </Card>
       <section>
         <div className="section-heading">

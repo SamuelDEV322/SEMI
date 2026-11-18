@@ -1,20 +1,10 @@
-import { useEffect, useRef, useState } from "react";
+import { lidarMessage } from "../services/sourceStatus";
+import { useScanFreshness } from "../hooks/useScanFreshness";
 import { Radar } from "lucide-react";
 import type { Scan } from "../types/api";
 import { Empty } from "./ui";
 export function LidarRadar({ scan }: { scan: Scan | null }) {
-  const observed = useRef({ scan, at: performance.now() });
-  const [, redraw] = useState(0);
-  if (observed.current.scan !== scan)
-    observed.current = { scan, at: performance.now() };
-  useEffect(() => {
-    const id = setInterval(() => redraw((n) => n + 1), 250);
-    return () => clearInterval(id);
-  }, []);
-  const expired =
-    scan?.source !== "mock" &&
-    scan?.age_ms != null &&
-    scan.age_ms + performance.now() - observed.current.at > 2000;
+  const expired = useScanFreshness(scan);
   const valid = scan?.valid && !expired && scan.points.length > 0;
   return (
     <div className="radar-panel">
@@ -23,15 +13,13 @@ export function LidarRadar({ scan }: { scan: Scan | null }) {
           <Radar size={15} /> Distancias alrededor de SEMI
         </span>
         <small>
-          {!scan
-            ? "SIN LECTURAS"
-            : scan?.freshness === "stale"
-              ? "Lectura desactualizada"
-              : scan?.source === "real"
-                ? "SENSOR USB · REAL"
-                : scan?.source === "replay"
-                  ? "REPRODUCCIÓN"
-                  : "SIMULACIÓN"}
+          {scan?.source === "mock"
+            ? "SIMULACIÓN"
+            : scan?.source === "replay"
+              ? "REPRODUCCIÓN"
+              : valid
+                ? "USB · ESCANEO ACTIVO"
+                : "USB · SIN ESCANEO"}
         </small>
       </div>
       {valid ? (
@@ -110,18 +98,10 @@ export function LidarRadar({ scan }: { scan: Scan | null }) {
           </text>
         </svg>
       ) : (
-        <Empty>
-          {expired || scan?.status === "stale"
-            ? "Último escaneo desactualizado"
-            : scan?.status === "error"
-              ? "No se pudo obtener un escaneo"
-              : scan?.status === "no_data"
-                ? "Sensor sin lecturas"
-                : "Sin escaneo disponible"}
-        </Empty>
+        <Empty>{lidarMessage(scan, expired)}</Empty>
       )}
       <div className="radar-footer">
-        {valid ? `${scan.points.length} distancias` : "Fuente no disponible"} ·{" "}
+        {valid ? `${scan.points.length} distancias` : "Sin escaneo activo"} ·{" "}
         {!scan
           ? "Sin datos"
           : scan.source === "real"

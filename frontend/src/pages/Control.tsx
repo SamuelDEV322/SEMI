@@ -1,3 +1,4 @@
+import { deviceMessage } from "../services/sourceStatus";
 import { useRef } from "react";
 import {
   ArrowUp,
@@ -41,7 +42,7 @@ export function Control({
     onExit();
   };
   const confirmed = !demo
-    ? "Estado del vehículo sin confirmar"
+    ? deviceMessage(robot)
     : robot?.surface_trial?.blocked
       ? "Ensayo: STOP simulado"
       : robot?.control.action === "stop"

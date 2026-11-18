@@ -13,9 +13,8 @@ async function cleanUI(page: Page) {
     page.getByText("Demostración y ensayos", { exact: true }),
   ).toHaveCount(0);
   await expect(page.getByLabel("Escenario de demostración")).toHaveCount(0);
-  await expect(
-    page.getByText("Diagnóstico técnico", { exact: true }),
-  ).toHaveCount(0);
+  for (const panel of await page.locator(".diagnostics").all())
+    await expect(panel.locator("pre")).not.toBeVisible();
   await expect(
     page.getByRole("button", {
       name: /medición simulada|puntos de ejemplo|Repetir bienvenida/,
@@ -83,7 +82,9 @@ for (const width of [360, 390, 768, 1440])
       await page.goto("/");
       await page.getByLabel("Apariencia").selectOption(theme);
       await expect(
-        page.getByText("Vehículo no conectado", { exact: true }),
+        page
+          .getByText("Conexión del vehículo sin configurar", { exact: true })
+          .first(),
       ).toBeVisible();
       const commands: string[] = [];
       page.on("request", (r) => {
@@ -100,10 +101,10 @@ for (const width of [360, 390, 768, 1440])
         ).toBeTruthy();
         if (screen === "Control") {
           await expect(page.locator(".drive-status")).toContainText(
-            "Estado del vehículo sin confirmar",
+            "Conexión del vehículo sin configurar",
           );
           await expect(
-            page.getByText("SENSOR USB · REAL", { exact: true }),
+            page.getByText("USB · SIN ESCANEO", { exact: true }),
           ).toBeVisible();
           for (const name of [
             "Adelante",
@@ -210,7 +211,7 @@ test("USB scan contract becomes stale in the browser without new frames", async 
   await expect(page.getByRole("img", { name: /Escaneo polar/ })).toBeVisible();
   await page.route("**/api/lidar/latest/", () => new Promise(() => {}));
   await expect(
-    page.getByText("Último escaneo desactualizado", { exact: true }),
+    page.getByText("No recibimos datos recientes del sensor", { exact: true }),
   ).toBeVisible({ timeout: 3500 });
   await expect(page.getByRole("img", { name: /Escaneo polar/ })).toHaveCount(0);
 });

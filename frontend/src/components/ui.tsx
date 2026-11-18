@@ -1,3 +1,4 @@
+import { deviceMessage } from "../services/sourceStatus";
 import type { ReactNode } from "react";
 import { Wifi, WifiOff, AlertTriangle, Clock3 } from "lucide-react";
 import type { RobotStatus } from "../types/api";
@@ -29,17 +30,7 @@ export function Connection({
   return (
     <span className={`connection ${online ? "" : "offline"}`}>
       {online ? <Wifi size={14} /> : <WifiOff size={14} />}{" "}
-      {error
-        ? "Sin conexión con el sistema"
-        : !robot
-          ? "Conectando…"
-          : diagnostic
-            ? "Conexión establecida · diagnóstico"
-            : online
-              ? "Conectado · simulado"
-              : robot.source === "real"
-                ? "Vehículo no conectado"
-                : "Desconectado · simulado"}
+      {deviceMessage(robot, error)}
     </span>
   );
 }

@@ -37,6 +37,14 @@ class LidarSources:
             self.played_at = self.clock()
 
     def latest(self):
+        data = self._latest()
+        if self.source == "real":
+            from .lidar_diagnostics import annotate
+
+            return annotate(data, clock=self.clock)
+        return data
+
+    def _latest(self):
         with self.lock:
             if self.source == "mock":
                 return {

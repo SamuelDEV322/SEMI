@@ -139,6 +139,9 @@ for (const width of [360, 390, 768, 1440])
             });
         }
         if (screen === "Control") {
+          expect(await page.locator("body").innerText()).not.toContain(
+            "El vehículo no está conectado",
+          );
           page.on("request", (r) => {
             if (r.url().includes("/api/control/command/"))
               commands.push(r.url());
@@ -195,7 +198,9 @@ test("empty stale error and lost device do not create calibrated measurements", 
   );
   await page.reload();
   await expect(
-    page.getByText("Robot desconectado. Comprueba la conexión."),
+    page.getByText(
+      "Robot desconectado. Movimiento no disponible durante las pruebas.",
+    ),
   ).toBeVisible();
   expect(
     (await (await page.request.get("/api/npk/samples/")).json()).data,

@@ -1,3 +1,4 @@
+import { deviceMessage } from "../services/sourceStatus";
 import type { RobotStatus } from "../types/api";
 import { Card, Reading, dateTime } from "./ui";
 export function DeviceReadings({ robot }: { robot: RobotStatus | null }) {
@@ -5,14 +6,11 @@ export function DeviceReadings({ robot }: { robot: RobotStatus | null }) {
   if (!device) return null;
   const reading = robot?.telemetry.device_reading;
   const adc = reading?.sensors.soil_moisture_adc;
-  const battery = reading?.sensors.battery;
   const stale = reading?.freshness === "stale";
   return (
     <Card title="Datos del vehículo en pruebas">
       <p>
-        {robot?.connection === "diagnostic_online"
-          ? "Conexión establecida. Movimiento no disponible durante las pruebas."
-          : "Robot desconectado. Comprueba la conexión."}
+        {deviceMessage(robot)}. Movimiento no disponible durante las pruebas.
       </p>
       {!reading ? (
         <p>Esperando datos del sensor.</p>
@@ -37,15 +35,6 @@ export function DeviceReadings({ robot }: { robot: RobotStatus | null }) {
               </p>
             </>
           )}
-          {battery && (
-            <Reading
-              label="Tensión de batería"
-              value={battery.status === "valid" ? battery.voltage_v : null}
-              unit="V"
-              stale={stale}
-              note="Tensión recibida; no estima la carga"
-            />
-          )}
           <p>Recibida: {dateTime(reading.received_at)}</p>
           <p>
             {reading.measured_at
@@ -65,7 +54,19 @@ export function DeviceReadings({ robot }: { robot: RobotStatus | null }) {
       )}
       <details>
         <summary>Diagnóstico de conexión</summary>
-        <pre>{JSON.stringify({ device, reading }, null, 2)}</pre>
+        <pre>
+          {JSON.stringify(
+            {
+              device,
+              diagnostics: robot?.diagnostics,
+              reading: reading
+                ? { ...reading, sensors: { soil_moisture_adc: adc } }
+                : null,
+            },
+            null,
+            2,
+          )}
+        </pre>
       </details>
     </Card>
   );

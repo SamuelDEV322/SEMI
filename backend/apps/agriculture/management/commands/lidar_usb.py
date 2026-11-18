@@ -1,6 +1,7 @@
 import os
 import json
 import time
+from datetime import datetime, timezone
 from django.core.management import BaseCommand, CommandError
 from adapters.a1 import SerialLidarProvider, frame
 from adapters.lidar_sources import spool_path
@@ -33,7 +34,21 @@ class Command(BaseCommand):
         path = spool_path()
         path.parent.mkdir(parents=True, exist_ok=True)
 
+        verified = False
+        phase = "starting"
+
         def publish(value):
+            value = {
+                **value,
+                "reader": {
+                    "port": options["port"],
+                    "revision": options["revision"],
+                    "identity_verified": verified,
+                    "phase": phase,
+                    "heartbeat_at": datetime.now(timezone.utc).isoformat(),
+                    "heartbeat_monotonic": time.monotonic(),
+                },
+            }
             temporary = path.with_suffix(".tmp")
             temporary.write_text(json.dumps(value, allow_nan=False), encoding="utf8")
             temporary.replace(path)
@@ -41,7 +56,10 @@ class Command(BaseCommand):
         failure = None
         terminal = None
         try:
+            publish(frame("no_data"))
             reader.start(confirmed=True)
+            verified = True
+            phase = "reading"
             publish(reader.latest())
             while reader.started:
                 snapshot = reader.read_once()
@@ -54,10 +72,12 @@ class Command(BaseCommand):
         except KeyboardInterrupt:
             pass
         except Exception as error:
+            phase = "failed"
             failure = str(error)
             publish(frame("error", error=str(error)))
             raise CommandError(str(error))
         finally:
+            phase = "failed" if failure or terminal else "closed"
             reader.close()
             publish(
                 frame("error", error=failure)
