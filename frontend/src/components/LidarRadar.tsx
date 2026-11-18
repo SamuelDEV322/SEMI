@@ -7,19 +7,23 @@ export function LidarRadar({ scan }: { scan: Scan | null }) {
   const expired = useScanFreshness(scan);
   const valid = scan?.valid && !expired && scan.points.length > 0;
   return (
-    <div className="radar-panel">
+    <div
+      className={`radar-panel ${scan?.source === "mock" ? "radar-simulated" : ""}`}
+    >
       <div className="radar-heading">
         <span>
           <Radar size={15} /> Distancias alrededor de SEMI
         </span>
         <small>
-          {scan?.source === "mock"
-            ? "SIMULACIÓN"
-            : scan?.source === "replay"
-              ? "REPRODUCCIÓN"
-              : valid
-                ? "USB · ESCANEO ACTIVO"
-                : "USB · SIN ESCANEO"}
+          {!scan
+            ? "LiDAR · Sin datos"
+            : scan.source === "mock"
+              ? "LiDAR · Simulación"
+              : scan?.source === "replay"
+                ? "REPRODUCCIÓN"
+                : valid
+                  ? "REAL · ESCANEO ACTIVO"
+                  : "REAL · SIN ESCANEO"}
         </small>
       </div>
       {valid ? (
@@ -53,31 +57,33 @@ export function LidarRadar({ scan }: { scan: Scan | null }) {
           <text x="240" y="115" fontSize="12" fill="var(--muted)">
             90°
           </text>
-          {scan.points
-            .filter(
-              (p) =>
-                p.valid &&
-                p.distance !== null &&
-                p.distance >= 0 &&
-                p.distance <= scan.max_range_mm,
-            )
-            .map((p, i) => {
-              const a = (p.angle_deg * Math.PI) / 180,
-                r = (p.distance! / scan.max_range_mm) * 105;
-              return (
-                <circle
-                  key={i}
-                  cx={150 + Math.sin(a) * r}
-                  cy={120 - Math.cos(a) * r}
-                  r="2.1"
-                  fill={
-                    scan.freshness === "stale"
-                      ? "var(--warning-text)"
-                      : "var(--accent)"
-                  }
-                />
-              );
-            })}
+          <g className="radar-distances">
+            {scan.points
+              .filter(
+                (p) =>
+                  p.valid &&
+                  p.distance !== null &&
+                  p.distance >= 0 &&
+                  p.distance <= scan.max_range_mm,
+              )
+              .map((p, i) => {
+                const a = (p.angle_deg * Math.PI) / 180,
+                  r = (p.distance! / scan.max_range_mm) * 105;
+                return (
+                  <circle
+                    key={i}
+                    cx={150 + Math.sin(a) * r}
+                    cy={120 - Math.cos(a) * r}
+                    r="2.1"
+                    fill={
+                      scan.freshness === "stale"
+                        ? "var(--warning-text)"
+                        : "var(--accent)"
+                    }
+                  />
+                );
+              })}
+          </g>
           <rect
             x="142"
             y="112"
@@ -105,7 +111,7 @@ export function LidarRadar({ scan }: { scan: Scan | null }) {
         {!scan
           ? "Sin datos"
           : scan.source === "real"
-            ? "Solo lectura USB"
+            ? "Fuente real · Solo lectura USB"
             : "Datos de prueba"}
       </div>
     </div>

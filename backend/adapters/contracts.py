@@ -1,4 +1,4 @@
-from typing import Literal, Protocol, TypedDict
+from typing import Literal, NotRequired, Protocol, TypedDict
 
 Source = Literal["mock", "replay", "real"]
 
@@ -25,6 +25,20 @@ class RobotProvider(Protocol):
     def command(self, data: dict) -> tuple[dict, int]: ...
 
 
+class MotionCommand(TypedDict):
+    domain: NotRequired[Literal["traction", "all"]]
+    mode: Literal["demonstration", "operational"]
+    action: Literal["forward", "backward", "left", "right", "stop"]
+    speed: Literal["low", "medium"]
+    session_id: str
+    seq: int
+    epoch: int
+    window_id: str
+
+
+LidarScan = Scan
+
+
 class TelemetryProvider(Protocol):
     def latest(self) -> dict: ...
 
@@ -40,3 +54,21 @@ class LidarProvider(Protocol):
 # SerialLidarProvider is an explicit-start USB diagnostic implementation.
 # Future Esp32RobotProvider, RealNPKProvider and WirelessLidarProvider must
 # preserve provenance and implement these contracts without synthetic fallback.
+
+
+class RackCommand(TypedDict):
+    mode: Literal["demonstration"]
+    domain: Literal["rack"]
+    action: Literal["up", "down", "stop"]
+    device_id: str
+    request_id: str
+    session_id: str
+    seq: int
+    epoch: int
+    window_id: str
+    max_duration_ms: int
+
+
+class RackProvider(Protocol):
+    def status(self) -> dict: ...
+    def command(self, data: RackCommand) -> tuple[dict, int]: ...

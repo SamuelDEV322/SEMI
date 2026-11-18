@@ -1,3 +1,6 @@
+import threading
+from weakref import WeakKeyDictionary
+from .rack import MockRackProvider, BlockedRackProvider
 from .mock import (
     MockRobotProvider,
     MockTelemetryProvider,
@@ -32,3 +35,21 @@ def current_robot():
 def current_npk():
     # No guessed sensor protocol or synthetic fallback in operational mode.
     return npk if is_demonstration() else None
+
+
+_demo_domains = WeakKeyDictionary()
+_domains_lock = threading.RLock()
+blocked_rack = BlockedRackProvider()
+
+
+def demo_domains(robot, plot_id=None):
+    with _domains_lock:
+        entry = _demo_domains.get(robot)
+        if entry is None or entry[0] != robot.simulation_id:
+            entry = (
+                robot.simulation_id,
+                MockRackProvider(f"demo-{plot_id or 'default'}"),
+                MockLidarProvider(),
+            )
+            _demo_domains[robot] = entry
+        return entry[1], entry[2]

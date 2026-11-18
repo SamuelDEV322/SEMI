@@ -8,7 +8,7 @@ from rest_framework.response import Response
 from rest_framework import serializers
 from rest_framework.exceptions import PermissionDenied, APIException
 from adapters import registry
-from adapters.mock import MockTelemetryProvider, MockLidarProvider
+from adapters.mock import MockTelemetryProvider
 from apps.agriculture.models import Sample, SamplingPoint
 from apps.agriculture.serializers import (
     SampleSerializer,
@@ -83,6 +83,13 @@ def health(request):
 @api_view(["GET"])
 def robot_status(request):
     data = robot_for(request).status()
+    if registry.is_demonstration():
+        rack, _ = registry.demo_domains(
+            robot_for(request), scope(request).id if scope(request) else None
+        )
+        data["rack"] = rack.status()
+    else:
+        data["rack"] = registry.blocked_rack.status()
     if not registry.is_demonstration():
         from apps.devices.diagnostics import runtime_diagnostics
 
@@ -189,14 +196,11 @@ def samples(request):
 def lidar(request):
     if not registry.is_demonstration():
         return Response(envelope(registry.real_lidar.latest()))
-    failure = unavailable(request)
-    if failure is not None:
-        return failure
+    _, mock = registry.demo_domains(
+        robot_for(request), scope(request).id if scope(request) else None
+    )
     if settings.SEMI_LIDAR_SOURCE == "mock":
-        data = MockLidarProvider(robot_for(request)).latest()
-        data.update(
-            age_ms=30000 if robot_for(request).scenario == "stale" else 0, error=None
-        )
+        data = mock.latest()
         return Response(envelope(data))
     provider = (
         registry.real_lidar
@@ -226,6 +230,37 @@ def command(request):
     serializer = CommandSerializer(data=request.data)
     serializer.is_valid(raise_exception=True)
     robot = robot_for(request)
+    domain = serializer.validated_data["domain"]
+    if domain in ["rack", "all"] and not registry.is_demonstration():
+        data, status_code = registry.blocked_rack.command(serializer.validated_data)
+        return Response({"mode": settings.SEMI_MODE, "error": data}, status=status_code)
+    if registry.is_demonstration() and domain == "rack":
+        rack, _ = registry.demo_domains(
+            robot, scope(request).id if scope(request) else None
+        )
+        data, status_code = rack.command(serializer.validated_data)
+        return Response(
+            (
+                envelope(data)
+                if status_code == 200
+                else {"mode": settings.SEMI_MODE, "error": data}
+            ),
+            status=status_code,
+        )
+    if registry.is_demonstration() and domain == "all":
+        rack, _ = registry.demo_domains(
+            robot, scope(request).id if scope(request) else None
+        )
+        with robot.lock, rack.lock:
+            data, status_code = robot.command(serializer.validated_data)
+            rack.stop()
+            if status_code != 200:
+                robot.set_scenario(robot.scenario)
+                return Response(
+                    {"mode": settings.SEMI_MODE, "error": data}, status=status_code
+                )
+            data["rack"] = rack.status()
+        return Response(envelope(data))
     if not registry.is_demonstration():
         if serializer.validated_data["mode"] != "operational":
             raise PermissionDenied(
@@ -276,14 +311,26 @@ def command(request):
 @csrf_protect
 @api_view(["POST"])
 def scenario(request):
-    if not settings.SEMI_DEV_TOOLS:
+    if not registry.is_demonstration() or not settings.SEMI_DEV_TOOLS:
         raise PermissionDenied("Las herramientas de ensayo no están disponibles.")
     value = request.data.get("scenario")
     if value not in registry.robot.scenarios:
         raise serializers.ValidationError(
             {"scenario": "Usa connected, disconnected, no_data, error o stale."}
         )
-    robot_for(request).set_scenario(value)
+    domain = request.data.get("domain", "all")
+    if domain not in ["traction", "rack", "lidar", "all"]:
+        raise serializers.ValidationError("Dominio de ensayo desconocido.")
+    robot = robot_for(request)
+    rack, lidar = registry.demo_domains(
+        robot, scope(request).id if scope(request) else None
+    )
+    if domain in ["traction", "all"]:
+        robot.set_scenario(value)
+    if domain in ["rack", "all"]:
+        rack.set_scenario(value)
+    if domain in ["lidar", "all"]:
+        lidar.set_scenario(value)
     SystemEvent.objects.create(
         kind="scenario", message=f"Escenario de demostración: {value}"
     )

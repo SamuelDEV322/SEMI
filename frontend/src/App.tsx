@@ -198,6 +198,7 @@ export function Dashboard({
               {page === "control" && (
                 <>
                   <Control
+                    serviceAvailable={!robot.error && !switching}
                     robot={robot.data}
                     scan={scan.data}
                     scanError={scan.error}

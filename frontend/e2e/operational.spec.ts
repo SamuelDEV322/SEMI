@@ -101,10 +101,10 @@ for (const width of [360, 390, 768, 1440])
         ).toBeTruthy();
         if (screen === "Control") {
           await expect(page.locator(".drive-status")).toContainText(
-            "Conexión del vehículo sin configurar",
+            "Tracción física no habilitada",
           );
           await expect(
-            page.getByText("USB · SIN ESCANEO", { exact: true }),
+            page.getByText("REAL · SIN ESCANEO", { exact: true }),
           ).toBeVisible();
           for (const name of [
             "Adelante",

@@ -1,5 +1,3 @@
-import { deviceMessage } from "../services/sourceStatus";
-import { useRef } from "react";
 import {
   ArrowUp,
   ArrowDown,
@@ -9,17 +7,20 @@ import {
   LogOut,
 } from "lucide-react";
 import type { Action, RobotStatus, Scan } from "../types/api";
+import { useRackControl } from "../hooks/useRackControl";
 import { useManualControl } from "../hooks/useManualControl";
 import { LidarRadar } from "../components/LidarRadar";
 import { ThemeSelector } from "../components/ThemeSelector";
 import { useRuntime } from "../Runtime";
 export function Control({
+  serviceAvailable,
   robot,
   scan,
   online,
   onExit,
   scanError,
 }: {
+  serviceAvailable: boolean;
   robot: RobotStatus | null;
   scan: Scan | null;
   online: boolean;
@@ -28,21 +29,50 @@ export function Control({
 }) {
   const runtime = useRuntime();
   const demo = runtime.mode === "demonstration";
-  const c = useManualControl(robot, online),
-    pointer = useRef<number | null>(null);
-  const directions: { action: Action; label: string; icon: typeof ArrowUp }[] =
-    [
-      { action: "forward", label: "Adelante", icon: ArrowUp },
-      { action: "left", label: "Izquierda", icon: ArrowLeft },
-      { action: "right", label: "Derecha", icon: ArrowRight },
-      { action: "backward", label: "Atrás", icon: ArrowDown },
-    ];
+  const c = useManualControl(robot, online);
+  const rackOnline =
+    demo &&
+    serviceAvailable &&
+    !!robot?.rack?.available &&
+    robot.rack.connection === "simulated_online";
+  const r = useRackControl(robot?.rack, rackOnline);
+  const stopAll = async () => {
+    r.cancel();
+    await c.stopAll();
+  };
+  const rackState = !rackOnline
+    ? robot?.rack?.state === "error"
+      ? "Error del módulo"
+      : demo
+        ? "No disponible"
+        : "No habilitado"
+    : r.pendingStop
+      ? "Parada solicitada…"
+      : r.technicalError
+        ? "Sin confirmación"
+        : robot?.rack?.state === "raising_simulated"
+          ? "Subiendo (simulado)"
+          : robot?.rack?.state === "lowering_simulated"
+            ? "Bajando (simulado)"
+            : r.action !== "stop"
+              ? "Solicitud en curso…"
+              : "Detenido (simulado)";
+  const directions: {
+    action: Exclude<Action, "stop">;
+    label: string;
+    icon: typeof ArrowUp;
+  }[] = [
+    { action: "forward", label: "Adelante", icon: ArrowUp },
+    { action: "left", label: "Izquierda", icon: ArrowLeft },
+    { action: "right", label: "Derecha", icon: ArrowRight },
+    { action: "backward", label: "Atrás", icon: ArrowDown },
+  ];
   const leave = async () => {
-    if (online) await c.stop();
+    if (demo) await stopAll();
     onExit();
   };
   const confirmed = !demo
-    ? deviceMessage(robot)
+    ? "Tracción física no habilitada"
     : robot?.surface_trial?.blocked
       ? "Ensayo: STOP simulado"
       : robot?.control.action === "stop"
@@ -101,45 +131,37 @@ export function Control({
                 aria-pressed={c.action === action}
                 disabled={!online || c.pendingStop}
                 className={`direction ${action} ${c.action === action ? "pressed" : ""}`}
-                onPointerDown={(e) => {
-                  if (e.button !== 0 || pointer.current !== null) return;
-                  pointer.current = e.pointerId;
-                  e.currentTarget.setPointerCapture(e.pointerId);
-                  c.start(action);
-                }}
-                onPointerUp={(e) => {
-                  if (pointer.current === e.pointerId) {
-                    pointer.current = null;
-                    c.release();
-                  }
-                }}
-                onPointerCancel={() => {
-                  pointer.current = null;
-                  c.release();
-                }}
-                onLostPointerCapture={() => {
-                  pointer.current = null;
-                  c.release();
-                }}
-                onBlur={c.release}
-                onKeyDown={(e) => {
-                  if ([" ", "Enter"].includes(e.key) && !e.repeat) {
-                    e.preventDefault();
-                    c.start(action);
-                  }
-                }}
-                onKeyUp={(e) => {
-                  if ([" ", "Enter"].includes(e.key)) {
-                    e.preventDefault();
-                    c.release();
-                  }
-                }}
+                {...c.bind(action)}
               >
                 <Icon size={22} />
                 <span>{label}</span>
               </button>
             ))}
           </div>
+          <section className="rack-controls" aria-label="Módulo agrícola">
+            <div className="rack-heading">
+              <strong>Módulo agrícola</strong>
+              <span role="status">{rackState}</span>
+            </div>
+            <div className="rack-buttons">
+              <button
+                className={`button ${r.action === "up" ? "pressed" : ""}`}
+                disabled={!rackOnline || r.pendingStop || c.pendingStop}
+                aria-pressed={r.action === "up"}
+                {...r.bind("up")}
+              >
+                <ArrowUp size={18} /> Subir
+              </button>
+              <button
+                className={`button ${r.action === "down" ? "pressed" : ""}`}
+                disabled={!rackOnline || r.pendingStop || c.pendingStop}
+                aria-pressed={r.action === "down"}
+                {...r.bind("down")}
+              >
+                <ArrowDown size={18} /> Bajar
+              </button>
+            </div>
+          </section>
           <div className="speed-row">
             <span>Velocidad</span>
             <div className="segmented">
@@ -161,8 +183,15 @@ export function Control({
           </div>
           <button
             className="button stop-button wide"
-            disabled={!online}
-            onClick={() => void c.stop()}
+            disabled={!demo || !serviceAvailable}
+            onPointerDown={(event) => {
+              if (event.button !== 0) return;
+              event.preventDefault();
+              void stopAll();
+            }}
+            onClick={(event) => {
+              if (event.detail === 0) void stopAll();
+            }}
           >
             <Square size={18} fill="currentColor" />
             {c.pendingStop ? "SOLICITANDO PARADA…" : "DETENER ROBOT"}
@@ -182,10 +211,23 @@ export function Control({
             <pre>
               {JSON.stringify(
                 {
-                  command: c.action,
-                  confirmed: robot?.control.action,
-                  scanError,
-                  error: c.technicalError,
+                  traction: {
+                    intent: c.action,
+                    confirmed: robot?.control,
+                    error: c.technicalError,
+                  },
+                  rack: {
+                    intent: r.action,
+                    confirmed: robot?.rack,
+                    error: r.technicalError,
+                    message: r.message,
+                  },
+                  lidar: {
+                    source: scan?.source,
+                    status: scan?.status,
+                    freshness: scan?.freshness,
+                    error: scanError || scan?.error,
+                  },
                   hardwareActed: false,
                 },
                 null,

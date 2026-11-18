@@ -60,6 +60,7 @@ export interface DeviceReading {
   };
 }
 export interface RobotStatus {
+  rack?: RackStatus;
   diagnostics?: {
     integration: "disabled" | "diagnostic";
     registered: boolean;
@@ -171,6 +172,7 @@ export interface Scan {
   }[];
 }
 export interface Command {
+  domain?: "traction" | "all";
   mode: "operational" | "demonstration";
   action: Action;
   speed: Speed;
@@ -180,10 +182,54 @@ export interface Command {
   window_id: string;
 }
 export interface CommandAck {
+  rack?: RackStatus;
   result: "applied_simulated";
   hardware_acted: false;
   track_demand: [number, number];
   control: ControlState;
+}
+
+export type MotionCommand = Command;
+export type LidarScan = Scan;
+export type RackAction = "up" | "down" | "stop";
+export interface RackStatus {
+  device_id: string | null;
+  source: Source;
+  available: boolean;
+  connection: "simulated_online" | "simulated_offline" | "unavailable";
+  state:
+    | "stopped_simulated"
+    | "raising_simulated"
+    | "lowering_simulated"
+    | "unavailable"
+    | "error";
+  physical_authorized: false;
+  execution_state: "unverified";
+  control: (Omit<ControlState, "action"> & { action: RackAction }) | null;
+  diagnostic: string | null;
+}
+export interface RackCommand {
+  domain: "rack";
+  mode: "demonstration";
+  action: RackAction;
+  device_id: string;
+  request_id: string;
+  session_id: string;
+  seq: number;
+  epoch: number;
+  window_id: string;
+  max_duration_ms: number;
+}
+export interface RackAck {
+  result: "accepted_simulated";
+  acceptance: "accepted" | "duplicate";
+  hardware_acted: false;
+  execution_state: "unverified";
+  device_id: string;
+  request_id: string;
+  seq: number;
+  max_duration_ms: number;
+  rack: RackStatus;
 }
 
 export interface SamplingPoint {

@@ -35,7 +35,9 @@ test("LiDAR source cannot be changed from the browser", async ({ page }) => {
   expect(response.status()).toBe(405);
   expect((await response.json()).error.code).toBe("source_fixed");
   await nav(page, "Control");
-  await expect(page.getByText("SIMULACIÓN", { exact: true })).toBeVisible();
+  await expect(
+    page.getByText("LiDAR · Simulación", { exact: true }),
+  ).toBeVisible();
 });
 test("theme contrast tokens and no corrupted text", async ({ page }) => {
   await reset(page);

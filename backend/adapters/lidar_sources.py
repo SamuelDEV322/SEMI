@@ -49,7 +49,7 @@ class LidarSources:
             if self.source == "mock":
                 return {
                     **self.mock.latest(),
-                    "age_ms": 30000 if self.mock.robot.scenario == "stale" else 0,
+                    "age_ms": 30000 if self.mock.scenario == "stale" else 0,
                     "error": None,
                 }
             if self.source == "replay":
@@ -87,6 +87,14 @@ class LidarSources:
                     or data.get("status") not in statuses
                 ):
                     raise ValueError("Invalid scan contract")
+                reader = data.get("reader") or {}
+                if isinstance(reader, dict) and reader.get("host"):
+                    from .lidar_ipc import local_host
+
+                    if reader["host"] != local_host():
+                        raise ValueError(
+                            "Remote scan spool is unsupported; use an authenticated transport"
+                        )
                 points = data.get("points")
                 if (
                     not isinstance(points, list)

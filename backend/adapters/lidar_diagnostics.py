@@ -35,6 +35,8 @@ def passive_ports():
 
 
 def annotate(data, clock=time.monotonic):
+    from .lidar_ipc import local_host
+
     inventory = passive_ports()
     reader = data.get("reader") or {}
     if not isinstance(reader, dict):
@@ -112,6 +114,10 @@ def annotate(data, clock=time.monotonic):
     else:
         state = "unknown"
     data["acquisition"] = {
+        "transport": "local_usb",
+        "backend_host": local_host(),
+        "reader_host": reader.get("host"),
+        "same_host": reader.get("host") == local_host() if reader.get("host") else None,
         "state": state,
         "selected_port": selected,
         "usb_detected": usb,

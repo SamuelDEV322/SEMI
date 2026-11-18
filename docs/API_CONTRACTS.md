@@ -113,3 +113,7 @@ Se añade GET/POST /api/setup/ y la cabecera X-SEMI-Plot. Ver la tabla de accion
 ## Evolución de contrato Gate 4
 
 GET/POST /api/setup/ usa ahora etapas 1–4 y sectores por nombre. Se retiran category/surface/conservative del JSON agrícola; los tipos y consumidores se actualizaron. Acciones: sector, sector_delete (confirmed=true, solo vacío sin referencias), sector_archive, sector_restore, sector_detach (confirmed=true). point acepta x/y null y sector opcional; el contrato de puntos incluye sector_history. GET/POST /api/demo/surface/ gestiona exclusivamente ensayos simulados. Ver campos, alias compatibles, errores y ejemplos de flujo en GATE4.md. No cambia el contrato de mando físico: permanece prohibido con 403.
+
+## Evolución de contrato Gate 6.2
+
+Ver [contratos de control desacoplado](gates/GATE6_2_CONTROL_DESACOPLADO.md#2-contratos-preparados-sin-rutas-redundantes). GET robot/status añade rack. POST control/command admite domain=traction (predeterminado compatible), rack o all (solo STOP). Rack utiliza up/down/stop, device_id de simulación, request_id UUID, sesión/secuencia/época/ventana y max_duration_ms ≤ 450; el ACK separa aceptación de ejecución física no verificada. POST demo/scenario admite domain para ensayos independientes; sin campo conserva all. La envoltura 1.0, CSRF, contexto de terreno y rutas de dispositivo autenticadas se conservan. No se implementan órdenes físicas ni persistencia de escaneos.

@@ -227,6 +227,8 @@ El firmware original del compañero no se modifica. La prueba del contrato usa c
 
 ## Documentación e historia
 
+- [Gate 6.3 — Integración unificada](docs/gates/GATE6_3_INTEGRACION_UNIFICADA.md): recorrido USB local probado con fixtures, procedencia REAL explícita y preparación nativa inerte de dominios. La adquisición física en SEMI y los motores siguen pendientes de validación autorizada.
+- [Gate 6.2 — Control desacoplado](docs/gates/GATE6_2_CONTROL_DESACOPLADO.md): radar LiDAR discreto y simulaciones independientes de tracción/cremallera. Incluye contratos, capturas, pruebas y límites físicos; `npm --prefix frontend run test:actuators` reproduce sus comprobaciones sin hardware.
 - [Arquitectura](docs/ARCHITECTURE.md), [contratos API](docs/API_CONTRACTS.md), [hardware](docs/HARDWARE_STATUS.md) y [roadmap](docs/ROADMAP.md).
 - [Gate 4](docs/GATE4.md), [Gate 3](docs/GATE3.md), [Gate 2](docs/GATE2.md), [pruebas históricas](docs/TEST_RESULTS.md) y [referencia Figma](docs/FIGMA_AUDIT.md).
 - [README histórico de Gates 1–4](docs/README_HISTORY_GATES_1_TO_4.md). Sus instrucciones antiguas se conservan como historia; este README prevalece para reconstruir el entorno.

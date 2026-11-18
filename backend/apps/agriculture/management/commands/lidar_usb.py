@@ -5,6 +5,7 @@ from datetime import datetime, timezone
 from django.core.management import BaseCommand, CommandError
 from adapters.a1 import SerialLidarProvider, frame
 from adapters.lidar_sources import spool_path
+from adapters.lidar_ipc import reader_lock, local_host
 
 
 class Command(BaseCommand):
@@ -28,11 +29,17 @@ class Command(BaseCommand):
         )
         if input("Escribe INICIAR A1 para confirmar: ").strip() != "INICIAR A1":
             raise CommandError("Inicio cancelado; no se abrió el puerto.")
+        path = spool_path()
+        try:
+            with reader_lock(path):
+                self.run_reader(options, path)
+        except RuntimeError as error:
+            raise CommandError(str(error)) from error
+
+    def run_reader(self, options, path):
         reader = SerialLidarProvider(
             options["port"], options["revision"], options["baud"]
         )
-        path = spool_path()
-        path.parent.mkdir(parents=True, exist_ok=True)
 
         verified = False
         phase = "starting"
@@ -41,6 +48,8 @@ class Command(BaseCommand):
             value = {
                 **value,
                 "reader": {
+                    "host": local_host(),
+                    "transport": "local_usb",
                     "port": options["port"],
                     "revision": options["revision"],
                     "identity_verified": verified,

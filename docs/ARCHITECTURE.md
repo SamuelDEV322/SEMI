@@ -73,3 +73,11 @@ Ver GATE3.md para el asistente de instalación, contexto por Plot, separación d
 ## Evolución Gate 4
 
 Ver GATE4.md. Sectores descriptivos (TerrainZone por compatibilidad), archivo seguro y SectorMembership con referencias protegidas. SurfaceTrial separa el estado de laboratorio de la configuración agrícola. Installation coordina cuatro etapas y reutiliza SectorManager, PointEditor y RelativeMap en Datos. Se conserva polling HTTP, SQLite y los adaptadores anteriores; no se añaden servicios ni dependencias.
+
+## Evolución Gate 6.2
+
+[Control desacoplado](gates/GATE6_2_CONTROL_DESACOPLADO.md): LiDAR, tracción y cremallera conservan estados y fallos independientes. La cremallera demo reutiliza una instancia separada del supervisor lógico y un hook de interacción compartido, sin compartir sesiones ni ventanas. El proveedor físico de cremallera siempre rechaza movimiento; el broker de dispositivos STOP-only permanece intacto. No hay cambios de SQLite ni firmware. Se conservan los adaptadores reales de Gate 6.1 y no hay fallback físico a simulación.
+
+## Evolución Gate 6.3
+
+[Integración unificada](gates/GATE6_3_INTEGRACION_UNIFICADA.md) reutiliza lector, IPC local y API. Añade exclusión de publicación, filtrado de nodos inválidos y diagnóstico de host/transporte, con rechazo de archivos declarados de otra máquina. Un transporte remoto autenticado requiere implementación específica posterior. El modelo nativo de supervisión compone dominios independientes con salidas falsas privadas; no se conecta al broker ni al firmware de diagnóstico y no habilita GPIO.

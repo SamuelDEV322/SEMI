@@ -5,6 +5,7 @@ No port is opened by importing or constructing this adapter.
 """
 
 import time
+import os
 from datetime import datetime, timezone
 
 
@@ -72,6 +73,7 @@ class SerialLidarProvider:
         self.last_packet = clock()
         self.started = False
         self.has_boundary = False
+        self.nodes_in_scan = 0
 
     def start(self, *, confirmed=False):
         if not confirmed:
@@ -90,7 +92,11 @@ class SerialLidarProvider:
             # DTR is configured before opening; opening the port can still have
             # electrical effects on a particular USB kit: physical validation pending.
             self.device = factory(
-                port=None, baudrate=self.baud, timeout=0.2, write_timeout=0.2
+                port=None,
+                baudrate=self.baud,
+                timeout=0.2,
+                write_timeout=0.2,
+                **({"exclusive": True} if os.name != "nt" else {})
             )
             self.device.port = self.port
             self.device.dtr = True
@@ -150,13 +156,20 @@ class SerialLidarProvider:
                     self.last_packet = self.clock()
                 for point in decoded:
                     if point.pop("start"):
-                        if self.has_boundary and self.points:
-                            self.current = frame("valid", self.points, clock=self.clock)
+                        if self.has_boundary:
+                            self.current = frame(
+                                "valid" if self.points else "no_data",
+                                self.points,
+                                clock=self.clock,
+                            )
                         self.has_boundary = True
                         self.points = []
+                        self.nodes_in_scan = 0
                     if self.has_boundary:
-                        self.points.append(point)
-                    if len(self.points) > 4096:
+                        self.nodes_in_scan += 1
+                        if point["valid"]:
+                            self.points.append(point)
+                    if self.nodes_in_scan > 4096:
                         raise ValueError("No revolution boundary within bounded scan")
             if self.clock() - self.last_packet > 3:
                 raise TimeoutError("No valid A1 packets; check connection")

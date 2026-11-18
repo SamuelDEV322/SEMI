@@ -109,6 +109,26 @@ for (const width of [360, 390, 768, 1440])
         await expect(
           page.getByRole("button", { name, exact: true }),
         ).toBeDisabled();
+      selected = "active";
+      await page.reload();
+      await expect(
+        page.getByText("REAL · ESCANEO ACTIVO", { exact: true }),
+      ).toBeVisible();
+      await expect(page.locator(".radar-distances circle")).toHaveCount(1);
+      await expect(
+        page.getByText("LiDAR · Simulación", { exact: true }),
+      ).toHaveCount(0);
+      await expect(
+        page.getByRole("button", { name: "Subir", exact: true }),
+      ).toBeDisabled();
+      await expect(
+        page.getByRole("button", { name: "Bajar", exact: true }),
+      ).toBeDisabled();
+      await page.screenshot({
+        path: `../docs/evidence-gate6_3/real-contract-${width}-${theme}.png`,
+      });
+      selected = "not_detected";
+      await page.reload();
       if (width === 390)
         await page.screenshot({
           path: `../docs/evidence-gate6_1/${theme}-no-scan.png`,

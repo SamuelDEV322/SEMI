@@ -2,6 +2,8 @@ import type {
   Envelope,
   Command,
   CommandAck,
+  RackCommand,
+  RackAck,
   RobotStatus,
   Sample,
   Scan,
@@ -123,6 +125,8 @@ export const api = {
   history: () => request<Sample[]>("measurements/history/?limit=100"),
   lidar: () => request<Scan>("lidar/latest/"),
   command: (command: Command) => post<CommandAck>("control/command/", command),
+  rackCommand: (command: RackCommand) =>
+    post<RackAck>("control/command/", command),
   scenario: (scenario: Scenario) =>
     post<RobotStatus>("demo/scenario/", { scenario }),
   capture: (point_label: string, sampling_point?: number) =>

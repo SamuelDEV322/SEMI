@@ -11,7 +11,8 @@
     "format": "prettier --write src e2e *.ts *.json index.html",
     "test:mvp": "playwright test --config playwright.operational.config.ts",
     "test:device": "playwright test --config playwright.device.config.ts",
-    "test:sources": "playwright test --config playwright.sources.config.ts"
+    "test:sources": "playwright test --config playwright.sources.config.ts",
+    "test:actuators": "playwright test --config playwright.actuators.config.ts"
   },
   "dependencies": {
     "@fontsource/inter": "5.3.0",

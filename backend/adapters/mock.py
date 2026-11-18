@@ -21,6 +21,7 @@ class MockRobotProvider:
 
     def reset(self):
         with self.lock:
+            self.simulation_id = uuid.uuid4()
             self.scenario = "connected"
             self.action = "stop"
             self.speed = "low"
@@ -193,39 +194,59 @@ class MockNPKProvider:
 
 
 class MockLidarProvider:
-    def __init__(self, robot):
-        self.robot = robot
+    """Repeatable synthetic room, independent of traction and rack state."""
+
+    def __init__(self, robot=None):
+        self.robot = robot  # Legacy construction only; not the source of scan state.
+        self.scenario = "connected"
+
+    def set_scenario(self, scenario):
+        if scenario not in MockRobotProvider.scenarios:
+            raise ValueError("Unknown LiDAR simulation scenario")
+        self.scenario = scenario
 
     def latest(self):
-        scenario = self.robot.scenario
+        scenario = self.scenario
         available = scenario not in {"no_data", "disconnected", "error"}
         captured = timezone.now() - timedelta(seconds=30 if scenario == "stale" else 0)
+        points = []
+        if available:
+            for angle in range(0, 360, 3):
+                a = math.radians(angle)
+                dx, dy = math.sin(a), math.cos(a)
+                limits = [
+                    2000 / abs(dx) if abs(dx) > 1e-9 else 100000,
+                    1600 / abs(dy) if abs(dy) > 1e-9 else 100000,
+                ]
+                projection = dx * 700 + dy * 800
+                discriminant = projection * projection - (
+                    700 * 700 + 800 * 800 - 250 * 250
+                )
+                if discriminant >= 0 and projection > 0:
+                    limits.append(projection - math.sqrt(discriminant))
+                points.append(
+                    {
+                        "angle_deg": angle,
+                        "distance": round(min(limits), 1),
+                        "quality": 35,
+                        "valid": True,
+                    }
+                )
         return {
             "sensor_id": "mock-rplidar-a1",
             "captured_at": captured.isoformat(),
-            "status": "simulated" if available else "unavailable",
+            "status": (
+                "simulated"
+                if available
+                else "error" if scenario == "error" else "unavailable"
+            ),
             "source": "mock",
             "unit": "mm",
             "valid": available,
             "freshness": "stale" if scenario == "stale" else "fresh",
             "angle_convention": "0=forward; clockwise; robot_local",
             "max_range_mm": 4000,
-            "points": (
-                [
-                    {
-                        "angle_deg": angle,
-                        "distance": round(
-                            1500
-                            + 550 * math.sin(math.radians(angle * 3))
-                            + 250 * math.cos(math.radians(angle)),
-                            1,
-                        ),
-                        "quality": 35,
-                        "valid": True,
-                    }
-                    for angle in range(0, 360, 3)
-                ]
-                if available
-                else []
-            ),
+            "points": points,
+            "age_ms": 30000 if scenario == "stale" else 0,
+            "error": "simulated_lidar_error" if scenario == "error" else None,
         }
